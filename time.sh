@@ -20,13 +20,17 @@ function timestamp ()
 }
 
 ##
-# Get as stringableArray the time duration in seconds to run command given as parameter
+# Get as arrayToString the time duration in seconds to run command given as parameter
 # @example (["real"]="0m0.011s" ["user"]="0m0.001s" ["sys"]="0m0.005s" )
 # @param string $1 Command
-# @return stringableArray
+# @return arrayToString
 function timeTodo ()
 {
-    declare -a TIMER=( "$({ time "${1}"; } 2>&1 >/dev/null)" )
+    local COMMAND="$1"
+    if [[ -z "$COMMAND" ]]; then
+        return 1
+    fi
+    declare -a TIMER="($({ time "$COMMAND"; } 2>&1 >/dev/null))"
 
     if [[ "${TIMER[0]}" == "real" && "${TIMER[2]}" == "user" && "${TIMER[4]}" == "sys" ]]; then
         echo -n "([\"real\"]=\"${TIMER[1]}\" [\"user\"]=\"${TIMER[3]}\" [\"sys\"]=\"${TIMER[5]}\")"
@@ -42,10 +46,19 @@ function timeTodo ()
 # @return float
 function userTimeTodo ()
 {
-    declare -A TIMER
-    TIMER=( "$(timeTodo "${1}")" )
+    local COMMAND="$1"
+    if [[ -z "$COMMAND" ]]; then
+        return 1
+    fi
 
-    if [[ $? -eq 0 && -n "${TIMER[user]}" ]]; then
+    local USER_TIME
+    USER_TIME="$(timeTodo "$COMMAND")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    declare -a TIMER="$USER_TIME"
+    if [[ -n "${TIMER[user]}" ]]; then
         echo -n "${TIMER[user]}" |  awk -F '[^0-9.]*' '$0=$2'
         return
     fi
@@ -56,15 +69,33 @@ function userTimeTodo ()
 ##
 # Launch command in first parameter and check time duration.
 # If time exceeds the maximum float value given in second parameter return 1, 0 otherwise
+# @return int
 function userTimeTodoExceeded ()
 {
-    local TODO_TIME_DURATION="$(userTimeTodo "$1")"
-    local MAX_TIME_DURATION="$2"
+    local VAR_2="$2"
+    if [[ -z "$1" || -z "$VAR_2" ]]; then
+        return 1
+    elif [[ "$VAR_2" != *"."* ]]; then
+        # Int to float
+        VAR_2="${VAR_2}.0"
+    fi
 
-    if [[ 0 -eq "$(floatGreaterThan "$TODO_TIME_DURATION" "$MAX_TIME_DURATION")" ]]; then
-        echo -n 1
-    else
-        echo -n 0
+    local VAR_1
+    VAR_1="$(userTimeTodo "$1")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    elif [[ "$VAR_1" != *"."* ]]; then
+        # Int to float
+        VAR_1="${VAR_1}.0"
+    fi
+
+    declare -i RES=0
+    if (( ${VAR_1%%.*} > ${VAR_2%%.*} || ( ${VAR_1%%.*} == ${VAR_2%%.*} && ${VAR_1##*.} > ${VAR_2##*.} ) )) ; then
+        RES=1
+    fi
+    echo -n ${RES}
+
+    if [[ ${RES} -eq 0 ]]; then
         return 1
     fi
 }
@@ -80,7 +111,7 @@ function utcDateTimeFromTimestamp ()
 
     # Data check
     local REGEX='^-?[0-9]+$'
-    if [[ -z "$TIMESTAMP" ]] || ! [[ "$TIMESTAMP" =~ ${REGEX} ]]; then
+    if [[ -z "$TIMESTAMP" || ! "$TIMESTAMP" =~ ${REGEX} ]]; then
         return 1
     fi
 
@@ -110,7 +141,7 @@ function timestampFromUtcDateTime ()
     local TIMESTAMP=O
 
     # Data check
-    if [[ -z "$UTC_DATETIME" ]] || ! [[ "$UTC_DATETIME" == *"T"* ]]; then
+    if [[ -z "$UTC_DATETIME" || ! "$UTC_DATETIME" == *"T"* ]]; then
         return 1
     fi
 
@@ -127,5 +158,5 @@ function timestampFromUtcDateTime ()
         fi
     fi
 
-    echo -n "$TIMESTAMP"
+    echo -n ${TIMESTAMP}
 }
