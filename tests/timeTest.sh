@@ -7,6 +7,7 @@ source ../time.sh
 declare -r TEST_TIME_COMMAND="${PWD}/unit/test01.sh"
 declare -r TEST_TIME_BAD_COMMAND="${PWD}/unit/test00.sh"
 declare -r TEST_TIME_LOW_DURATION_COMMAND="0.001"
+declare -r TEST_TIME_MEDIUM_DURATION_COMMAND="0.019"
 declare -r TEST_TIME_HIGH_DURATION_COMMAND="0.101"
 declare -r -i TEST_TIME_BAD_TIMESTAMP=123
 declare -r TEST_TIME_BAD_TYPE_TIMESTAMP="12s"
@@ -74,7 +75,7 @@ function test_userTimeTodo ()
 }
 
 
-readonly TEST_TIME_USER_TIME_TODO_EXCEEDED="-11-11-11-01"
+readonly TEST_TIME_USER_TIME_TODO_EXCEEDED="-11-11-11-11-01"
 
 function test_userTimeTodoExceeded ()
 {
@@ -92,6 +93,11 @@ function test_userTimeTodoExceeded ()
 
     # Check with duration exceeding the command's duration
     TEST=$(userTimeTodoExceeded "$TEST_TIME_COMMAND" "$TEST_TIME_HIGH_DURATION_COMMAND")
+    echo -n "-$?"
+    [[ "$TEST" -eq 0 ]] && echo -n 1
+
+    # Check with medium duration
+    TEST=$(userTimeTodoExceeded "$TEST_TIME_COMMAND" "$TEST_TIME_MEDIUM_DURATION_COMMAND")
     echo -n "-$?"
     [[ "$TEST" -eq 0 ]] && echo -n 1
 

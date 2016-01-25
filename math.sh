@@ -6,6 +6,79 @@ declare -r BP_INT_TYPE="integer"
 declare -r BP_FLOAT_TYPE="float"
 declare -r BP_UNKNOWN_TYPE="unknown"
 
+# Convert a number between arbitrary bases
+# @return string $1 Var
+# @return int $2 FromBase
+# @return int $2 ToBase
+# @return int
+# @incoming
+#function baseConvert ()
+#{
+#    local VAR="$1"
+#    declare -i FROM_BASE="$2"
+#    if [[ -z "${FROM_BASE}" || "${FROM_BASE}" -lt 2 || "${FROM_BASE}" -gt 36 ]]; then
+#        echo -n 0
+#        return 1
+#    fi
+#    declare -i TO_BASE="$2"
+#    if [[ -z "${TO_BASE}" || "${TO_BASE}" -lt 2 || "${TO_BASE}" -gt 36 ]]; then
+#        echo -n 0
+#        return 2
+#    fi
+#
+#    #$(( 10#${VAR} ))
+#    #echo 'obase=16; ibase=2; 11010101' | bc
+#}
+
+##
+# Only return the decimal part of a float in integer
+# @param string $1
+# @return int
+function decimal ()
+{
+    local VAR="$1"
+    if [[ 0 -eq $(isFloat "$VAR") ]]; then
+        echo -n 0
+        return 1
+    fi
+    VAR=${VAR##*.}
+
+    # Removing leading zeros by converting it in base 10
+    if [[ ${VAR:0:1} == 0 && ${VAR} != 0 ]]; then
+        echo -n $(( 10#$VAR ))
+    else
+        echo -n ${VAR}
+    fi
+}
+
+##
+# Get the integer value of a variable
+# @param string $1 Var
+# @return int
+function int ()
+{
+    local VAR="$1"
+
+    if [[ 0 -eq $(isNumeric "$VAR") ]]; then
+        echo -n 0
+        return 1
+    fi
+
+    # Keep only the value left point
+    VAR=$(floor "$VAR")
+    if [[ $? -ne 0 ]]; then
+        echo -n 0
+        return 1
+    fi
+
+    # Removing leading zeros by converting it in base 10
+    if [[ ${VAR:0:1} == 0 && ${VAR} != 0 ]]; then
+        echo -n $(( 10#${VAR} ))
+    else
+        echo -n ${VAR}
+    fi
+}
+
 ##
 # Finds whether the type of a variable is float
 # @param string $1
@@ -96,7 +169,7 @@ function floatGreaterThan ()
         if [[ "$RES_2" == "${BP_INT_TYPE}" ]]; then
             VAR_2="${VAR_2}.0"
         fi
-        if (( ${VAR_1%%.*} > ${VAR_2%%.*} || ( ${VAR_1%%.*} == ${VAR_2%%.*} && ${VAR_1##*.} > ${VAR_2##*.} ) )) ; then
+        if (( $(floor "${VAR_1}") > $(floor "${VAR_2}") || ( $(floor "${VAR_1}") == $(floor "${VAR_2}") && $(decimal "${VAR_1}") > $(decimal "${VAR_2}") ) )) ; then
             RES=1
         fi
     fi
@@ -126,6 +199,26 @@ function floatLowerThan ()
 }
 
 ##
+# Round fractions down
+# @param float Value
+# @return int
+function floor ()
+{
+    local VAR="$1"
+    if [[ 1 -eq $(isFloat "$VAR") ]]; then
+        # Keep only the value left point
+        VAR="${VAR%%.*}"
+    fi
+
+    if [[ 1 -eq $(isInt "$VAR") ]]; then
+        echo -n ${VAR}
+    else
+        echo -n 0
+        return 1
+    fi
+}
+
+##
 # Get the type of a numeric variable
 #
 # Possible values for the returned string are:
@@ -145,4 +238,12 @@ function numericType ()
         echo -n "${BP_UNKNOWN_TYPE}"
         return 1
     fi
+}
+
+##
+# Generate a random integer
+# @return int
+function rand ()
+{
+    echo -n ${RANDOM}
 }
