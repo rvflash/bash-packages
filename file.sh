@@ -47,7 +47,7 @@ function includeOnce ()
 
     include "$1" "$BP_INCLUDE_ONCE"
     STATUS="$?"
-    if [[ ${STATUS} -ne 0 ]]; then
+    if [[ ${STATUS} -eq 1 ]]; then
         return ${STATUS}
     fi
 }
@@ -173,37 +173,4 @@ function userHome ()
         return 1
     fi
     echo -n "$BP_USER_HOME"
-}
-
-##
-# Convert a Yaml file into readable string for array convertion
-#
-# @example
-#   K1 : V1
-#   K2 : V2
-# => ([K1]="V1" [K2]="V2")
-#
-# @param string $1 Yaml file path to parse
-# @return arrayToString
-function yamlFileToArray ()
-{
-    if [[ -n "$1" ]] && [[ -f "$1" ]]; then
-        # Remove comment lines, empty lines and format line to build associative array for bash (protect CSV output)
-        local YAML_TO_ARRAY
-        YAML_TO_ARRAY=$(sed -e "/^#/d" \
-                            -e "/^$/d" \
-                            -e "s/\"/'/g" \
-                            -e "s/,/;/g" \
-                            -e "s/=//g" \
-                            -e "s/\ :[^:\/\/]/=\"/g" \
-                            -e "s/$/\"/g" \
-                            -e "s/ *=/]=/g" \
-                            -e "s/^/[/g" "$1")
-        if [[ $? -eq 0 ]]; then
-            echo -n "(${YAML_TO_ARRAY})"
-            return
-        fi
-    fi
-
-    return 1
 }
