@@ -22,12 +22,16 @@
 * userHome
 
 ## Package math
+* decimal
+* int
 * isFloat
 * isInt
 * isNumeric
 * floatGreaterThan
 * floatLowerThan
+* floor
 * numericType
+* rand
 
 ## Package net
 * parseUrl
