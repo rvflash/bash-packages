@@ -90,7 +90,9 @@ function userTimeTodoExceeded ()
     fi
 
     declare -i RES=0
-    if (( ${VAR_1%%.*} > ${VAR_2%%.*} || ( ${VAR_1%%.*} == ${VAR_2%%.*} && ${VAR_1##*.} > ${VAR_2##*.} ) )) ; then
+    local DEC_VAR_1=$(( 10#${VAR_1##*.} ))
+    local DEC_VAR_2=$(( 10#${VAR_2##*.} ))
+    if (( ${VAR_1%%.*} > ${VAR_2%%.*} || ( ${VAR_1%%.*} == ${VAR_2%%.*} && $DEC_VAR_1 > $DEC_VAR_2 ) )) ; then
         RES=1
     fi
     echo -n ${RES}
