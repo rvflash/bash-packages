@@ -25,7 +25,7 @@ function test_include ()
     # Check nothing
     TEST=$(include)
     echo -n "-$?"
-    [[ "$TEST" == "$BP_FILE_NOT_EXISTS" ]] && echo -n 1
+    [[ -z "$TEST" ]] && echo -n 1
 
     # Check real path
     include "${TEST_FILE_PATH_01}"
@@ -44,7 +44,7 @@ function test_include ()
 }
 
 
-readonly TEST_INCLUDE_ONCE="-11-01-21-11"
+readonly TEST_INCLUDE_ONCE="-11-01-01-11"
 
 function test_includeOnce ()
 {
