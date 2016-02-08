@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare -r BP_STRINGS_WRK_DIR="/tmp/"
+declare -r BP_STRINGS_WRK_DIR="/tmp"
 
 ##
 # Calculate and return a checksum for one string
@@ -21,7 +21,7 @@ function checksum ()
     fi
 
     # Create temporary file to apply checksum function on it
-    local CHECKSUM_FILE="${WRK_DIR}${RANDOM}.crc"
+    local CHECKSUM_FILE="${WRK_DIR}/${RANDOM}.crc"
     echo -n "$(trim "$STR")" > "$CHECKSUM_FILE"
 
     local CHECKSUM
