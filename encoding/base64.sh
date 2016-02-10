@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 declare -r -i BP_BASE64="$(if [[ -z "$(type -p base64)" ]]; then echo 0; else echo 1; fi)"
-declare -r BP_NET_WRK_DIR="/tmp"
 
 
 ##
 # Decodes data encoded with MIME base64
+# @return string
+# @returnStatus 2 If base64 command line tool is
 function base64Decode ()
 {
     # base64 command line tool is required
@@ -14,10 +15,13 @@ function base64Decode ()
     elif [[ -z "$1" ]]; then
         return 1
     fi
+
+    base64 --decode <<<"${1}"
 }
 
 ##
 # Encodes data with MIME base64
+# @return string
 function base64Encode ()
 {
     # base64 command line tool is required
@@ -26,4 +30,6 @@ function base64Encode ()
     elif [[ -z "$1" ]]; then
         return 1
     fi
+
+    base64 <<<"${1}"
 }
