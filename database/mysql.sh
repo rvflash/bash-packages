@@ -95,6 +95,33 @@ function __mysql_checksum ()
 }
 
 ##
+# Build basic options for mysql command line tool
+# @return string
+function __mysql_options ()
+{
+    local MYSQL_HOST="$1"
+    local MYSQL_USER="$2"
+    local MYSQL_PASS="$3"
+    declare -i MYSQL_TO="$4"
+
+    local MYSQL_OPTIONS=""
+    if [[ -n "${MYSQL_HOST}" ]]; then
+        MYSQL_OPTIONS+=" --host=${MYSQL_HOST}"
+    fi
+    if [[ -n "${MYSQL_USER}" ]]; then
+        MYSQL_OPTIONS+=" --user=${MYSQL_USER}"
+    fi
+    if [[ -n "${MYSQL_PASS}" ]]; then
+        MYSQL_OPTIONS+=" --password=${MYSQL_PASS}"
+    fi
+    if [[ "${MYSQL_TO}" -gt 0 ]]; then
+        # The number of seconds before connection timeout. (Default value is 0.)
+        MYSQL_OPTIONS+=" --connect_timeout=${MYSQL_TO}"
+    fi
+
+    echo -n "${MYSQL_OPTIONS}"
+}
+##
 # Performs a query on the database and return results in variable named in first parameter
 # @param int Database link
 # @param string Query
@@ -120,17 +147,9 @@ function __mysql_query ()
     if [[ -z "${MYSQL_QUERY}" ]]; then
         return 1
     fi
+
     local MYSQL_OPTIONS="$3"
-    if [[ -n "${MYSQL_LINK[${BP_MYSQL_PASS}]}" ]]; then
-        # Manage empty password
-        MYSQL_OPTIONS+=" --password=\"${MYSQL_LINK[${BP_MYSQL_PASS}]}\""
-    fi
-    if [[ "${MYSQL_LINK[${BP_MYSQL_TO}]}" -gt 0 ]]; then
-        # Connect timeout
-        MYSQL_OPTIONS+=" --connect_timeout=${MYSQL_LINK[${BP_MYSQL_TO}]}"
-    fi
-    MYSQL_OPTIONS+=" --host=\"${MYSQL_LINK[${BP_MYSQL_HOST}]}\""
-    MYSQL_OPTIONS+=" --user=\"${MYSQL_LINK[${BP_MYSQL_USER}]}\""
+    MYSQL_OPTIONS+=" $(__mysql_options "${MYSQL_LINK[${BP_MYSQL_HOST}]}" "${MYSQL_LINK[${BP_MYSQL_USER}]}" "${MYSQL_LINK[${BP_MYSQL_PASS}]}" "${MYSQL_LINK[${BP_MYSQL_TO}]}")"
 
     local MYSQL_QUERY_CHECKSUM=$(__mysql_checksum "${MYSQL_CHECKSUM}${BP_MYSQL_CHK_SEP}${MYSQL_QUERY}")
     if [[ $? -ne 0 ]]; then
@@ -184,6 +203,9 @@ function __mysql_fetch_array ()
 {
     local MYSQL_QUERY_CHECKSUM="$1"
     local MYSQL_SRC_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
+    if [[ -z "${MYSQL_QUERY_CHECKSUM}" || ! -f "${MYSQL_SRC_FILE}" ]]; then
+        return 1
+    fi
     local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_NUM}${BP_MYSQL_RESULT_EXT}"
 
     if [[ ! -f "${MYSQL_DST_FILE}" ]]; then
@@ -207,6 +229,9 @@ function __mysql_fetch_assoc ()
 {
     local MYSQL_QUERY_CHECKSUM="$1"
     local MYSQL_SRC_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
+    if [[ -z "${MYSQL_QUERY_CHECKSUM}" || ! -f "${MYSQL_SRC_FILE}" ]]; then
+        return 1
+    fi
     local MYSQL_NMS_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_COLUMN_NAMES_EXT}"
     local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_NUM}${BP_MYSQL_RESULT_EXT}"
 
@@ -235,22 +260,28 @@ function __mysql_fetch_assoc ()
 # @return int Database link
 # @returnStatus 2 If mysql command line tool is not available
 # @returnStatus 1 If host, username or database named are empty
+# @returnStatus 1 If connection failed
 function mysqlConnect ()
 {
+    local MYSQL_HOST="$1"
+    local MYSQL_USER="$2"
+    local MYSQL_PASS="$3"
+    local MYSQL_DB="$4"
+    declare -i MYSQL_TO=0
+    declare -i MYSQL_CACHED=0
+
     if [[ ${BP_MYSQL} -eq 0 ]]; then
         # Mysql as command line is required
         return 2
-    elif [[ -z "$1" || -z "$2" || -z "$4" ]]; then
+    elif [[ -z "${MYSQL_HOST}" || -z "${MYSQL_USER}" || -z "${MYSQL_DB}" ]]; then
         # Only password can be empty (usefull for local access on unsecure database)
         return 1
     fi
-    declare -i TO=0
     if [[ -n "$5" ]]; then
-        TO="$5"
+        MYSQL_TO="$5"
     fi
-    declare -i CACHED=0
     if [[ -n "$6" ]]; then
-        CACHED="$6"
+        MYSQL_CACHED="$6"
     fi
 
     # Create workspace directory
@@ -259,11 +290,23 @@ function mysqlConnect ()
     fi
 
     # Create connection
-    local MYSQL_CHECKSUM=$(__mysql_checksum "${1}${BP_MYSQL_CHK_SEP}${2}${BP_MYSQL_CHK_SEP}${3}${BP_MYSQL_CHK_SEP}${4}")
+    local MYSQL_CHECKSUM="${MYSQL_HOST}${BP_MYSQL_CHK_SEP}${MYSQL_USER}${BP_MYSQL_CHK_SEP}${MYSQL_PASS}${BP_MYSQL_CHK_SEP}${MYSQL_DB}"
+    MYSQL_CHECKSUM=$(__mysql_checksum "${MYSQL_CHECKSUM}")
     if [[ $? -ne 0 ]]; then
         return 1
     fi
-    echo -e "${1}\n${2}\n${3}\n${4}\n${TO}\n${CACHED}" > "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
+
+    # Try to connect to mysql server and use database
+    local MYSQL_OPTIONS MYSQL_DRYRUN
+    MYSQL_OPTIONS=$(__mysql_options "${MYSQL_HOST}" "${MYSQL_USER}" "${MYSQL_PASS}" "${MYSQL_TO}")
+    MYSQL_DRYRUN=$(mysql ${MYSQL_OPTIONS} -e "USE ${MYSQL_DB};" 2>&1 >/dev/null)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Create link to connection and save it
+    local MYSQL_CHECKSUM_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
+    echo -e "${MYSQL_HOST}\n${MYSQL_USER}\n${MYSQL_PASS}\n${MYSQL_DB}\n${MYSQL_TO}\n${MYSQL_CACHED}" > "${MYSQL_CHECKSUM_FILE}"
 
     echo -n "${MYSQL_CHECKSUM}"
 }
@@ -273,16 +316,15 @@ function mysqlConnect ()
 # Returns the number of rows affected by the last INSERT, UPDATE, REPLACE or DELETE query.
 # @param string $1 Database Link
 # @return int
-# @returnStatus 1 If result link does not exist
 function mysqlAffectedRows ()
 {
     local MYSQL_CHECKSUM="$1"
     local MYSQL_AFFECTED_ROW_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_AFFECTED_ROW_EXT}"
     if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_AFFECTED_ROW_FILE}" ]]; then
-        return 1
+        echo -n "0"
+    else
+        cat "${MYSQL_AFFECTED_ROW_FILE}"
     fi
-
-    cat "${MYSQL_AFFECTED_ROW_FILE}"
 }
 
 ##
@@ -313,9 +355,11 @@ function mysqlLastError ()
 {
     local MYSQL_CHECKSUM="$1"
     local MYSQL_ERROR_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
-    if [[ -f "${MYSQL_ERROR_FILE}" ]]; then
-        cat "${MYSQL_ERROR_FILE}"
+    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_ERROR_FILE}" ]]; then
+        return 0
     fi
+
+    cat "${MYSQL_ERROR_FILE}"
 }
 
 ##
@@ -325,7 +369,7 @@ function mysqlLastError ()
 # @return string
 function mysqlEscapeString ()
 {
-    echo -n "$1" | sed -e "s/\\\/\\\\/g" -e 's/"/\\"/g' -e "s/'/\\\'/g" -e "s/\\x00/\\\'/g" -e "s/\\n/\\\n/g"
+    echo -n "$1" | tr "\r\n" "§" | sed -e 's/\\/\\\\/g' -e "s/§/\\\n/g" -e 's/"/\\\"/g' -e "s/'/\\\'/g" -e "s/\\x00/\\\'/g"
 }
 
 ##
@@ -355,14 +399,23 @@ function mysqlFetchAll ()
     fi
 
     case "${MYSQL_RESULT_MODE}" in
-        ${BP_MYSQL_RESULT_RAW}) cat "${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}" ;;
-        ${BP_MYSQL_RESULT_ASSOC}) __mysql_fetch_assoc "${MYSQL_QUERY_CHECKSUM}" ;;
-        ${BP_MYSQL_RESULT_NUM}|*) __mysql_fetch_array "${MYSQL_QUERY_CHECKSUM}" ;;
+        ${BP_MYSQL_RESULT_RAW})
+            cat "${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
+            return $?
+            ;;
+        ${BP_MYSQL_RESULT_ASSOC})
+            __mysql_fetch_assoc "${MYSQL_QUERY_CHECKSUM}"
+            return $?
+            ;;
+        ${BP_MYSQL_RESULT_NUM}|*)
+            __mysql_fetch_array "${MYSQL_QUERY_CHECKSUM}"
+            return $?
+            ;;
     esac
 }
 
 ##
-# Fetch a result row as an associative array
+# Fetch results as an associative array
 # @param string $1 Result link
 # @param string $2 Query
 # @return string
@@ -379,7 +432,7 @@ function mysqlFetchAssoc ()
 }
 
 ##
-# Get a result row as an enumerated array
+# Get results as an enumerated array
 # @param string $1 Result link
 # @param string $2 Query
 # @return string
@@ -392,6 +445,23 @@ function mysqlFetchArray ()
     local MYSQL_QUERY="$2"
 
     mysqlFetchAll "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_RESULT_NUM}"
+    return $?
+}
+
+##
+# Fetch a result row as an associative array
+# @param string $1 Result link
+# @param string $2 Query
+# @return string
+# @returnStatus 1 If first parameter named query is empty
+# @returnStatus 1 If database's host is unknown
+# @returnStatus 1 If query failed
+function mysqlFetchRaw ()
+{
+    local MYSQL_CHECKSUM="$1"
+    local MYSQL_QUERY="$2"
+
+    mysqlFetchAll "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_RESULT_RAW}"
     return $?
 }
 
@@ -442,6 +512,8 @@ function mysqlOption ()
 
 ##
 # Performs a query on the database
+# For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries, return a result link.
+# For other successful queries, just returns with status 0.
 # @param string $1 Database link
 # @param string $2 Query
 # @return int Result link (only in case of non DML queries)
