@@ -8,9 +8,9 @@
 * Function inArray
 
 ## Package database/mysql
-* Function mysqlConnect
 * Function mysqlAffectedRows
 * Function mysqlClose
+* Function mysqlConnect
 * Function mysqlEscapeString
 * Function mysqlLastError
 * Function mysqlFetchAll
@@ -23,6 +23,10 @@
 ## Package encoding/yaml
 * Function yamlDecode
 * Function yamlFileDecode
+
+## Package encoding/base64
+* Function base64Decode
+* Function base64Encode
 
 ## Package file
 * Function include
