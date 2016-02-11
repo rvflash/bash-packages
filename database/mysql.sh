@@ -24,12 +24,12 @@ declare -r BP_MYSQL_DELETE="[Dd][Ee][Ll][Ee][Tt][Ee]"
 declare -r BP_MYSQL_AFFECTED_ROW_COUNT=";SELECT ROW_COUNT();"
 
 # Constants
-declare -r -i BP_MYSQL_HOST=1
-declare -r -i BP_MYSQL_USER=2
-declare -r -i BP_MYSQL_PASS=3
-declare -r -i BP_MYSQL_DB=4
-declare -r -i BP_MYSQL_TO=5
-declare -r -i BP_MYSQL_CACHED=6
+declare -r -i BP_MYSQL_HOST=0
+declare -r -i BP_MYSQL_USER=1
+declare -r -i BP_MYSQL_PASS=2
+declare -r -i BP_MYSQL_DB=3
+declare -r -i BP_MYSQL_TO=4
+declare -r -i BP_MYSQL_CACHED=5
 declare -r -i BP_MYSQL_RESULT_RAW=100
 declare -r -i BP_MYSQL_RESULT_NUM=101
 declare -r -i BP_MYSQL_RESULT_ASSOC=102
@@ -80,16 +80,10 @@ function __mysql_checksum ()
         return 1
     fi
 
-    # Create temporary file to apply checksum function on it
-    local MYSQL_CHECKSUM_FILE="${BP_MYSQL_WRK_DIR}/${RANDOM}.crc"
-    echo -n "${MYSQL_CHECKSUM}" > "${MYSQL_CHECKSUM_FILE}"
-
-    MYSQL_CHECKSUM="$(cksum "${MYSQL_CHECKSUM_FILE}" | awk '{print $1}')"
+    MYSQL_CHECKSUM="$(cksum <<<"${MYSQL_CHECKSUM}" | awk '{print $1}')"
     if [[ $? -ne 0 || -z "${MYSQL_CHECKSUM}" ]]; then
         return 1
     fi
-    # Clean workspace
-    rm -f "${MYSQL_CHECKSUM_FILE}"
 
     echo -n "${MYSQL_CHECKSUM}"
 }
@@ -138,7 +132,7 @@ function __mysql_query ()
         return 1
     else
         declare -a MYSQL_LINK
-        mapfile MYSQL_LINK < "${MYSQL_CONNECT_FILE}"
+        mapfile -t MYSQL_LINK < "${MYSQL_CONNECT_FILE}"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
@@ -151,7 +145,8 @@ function __mysql_query ()
     local MYSQL_OPTIONS="$3"
     MYSQL_OPTIONS+=" $(__mysql_options "${MYSQL_LINK[${BP_MYSQL_HOST}]}" "${MYSQL_LINK[${BP_MYSQL_USER}]}" "${MYSQL_LINK[${BP_MYSQL_PASS}]}" "${MYSQL_LINK[${BP_MYSQL_TO}]}")"
 
-    local MYSQL_QUERY_CHECKSUM=$(__mysql_checksum "${MYSQL_CHECKSUM}${BP_MYSQL_CHK_SEP}${MYSQL_QUERY}")
+    local MYSQL_QUERY_CHECKSUM="${MYSQL_CHECKSUM}"
+    MYSQL_QUERY_CHECKSUM+=$(__mysql_checksum "${MYSQL_CHECKSUM}${BP_MYSQL_CHK_SEP}${MYSQL_QUERY}")
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -192,7 +187,7 @@ function __mysql_query ()
             # Keep only datas
             echo "${MYSQL_RESULT}" | sed 1d > "${MYSQL_QUERY_RESULT_FILE}"
         fi
-        echo -n "${MYSQL_CHECKSUM}${MYSQL_QUERY_CHECKSUM}"
+        echo -n "${MYSQL_QUERY_CHECKSUM}"
     fi
 }
 
@@ -250,6 +245,46 @@ function __mysql_fetch_assoc ()
 }
 
 ##
+# Gets the number of affected rows in a previous MySQL operation
+# Returns the number of rows affected by the last INSERT, UPDATE, REPLACE or DELETE query.
+# With ON DUPLICATE KEY UPDATE, the affected-rows value per row is 1
+# If the row is inserted as a new row and 2 if an existing row is updated.
+#
+# If link does not exist or no affected query on this connexion, -1 is returned
+# @param string $1 Database Link
+# @return int
+function mysqlAffectedRows ()
+{
+    local MYSQL_CHECKSUM="$1"
+    local MYSQL_AFFECTED_ROW_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_AFFECTED_ROW_EXT}"
+    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_AFFECTED_ROW_FILE}" ]]; then
+        echo -n "-1"
+    else
+        cat "${MYSQL_AFFECTED_ROW_FILE}"
+    fi
+}
+
+##
+# Clean workspace of opened database connections and results
+# @param int $1 Database link
+# @returnStatus 1 If workspace does not exist
+function mysqlClose ()
+{
+    local MYSQL_CHECKSUM="$1"
+    local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
+    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_CONNECT_FILE}" ]]; then
+        return 1
+    fi
+
+    # Remove connection file
+    rm -f "${MYSQL_CONNECT_FILE}"
+    # Remove all result files
+    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}*${BP_MYSQL_RESULT_EXT}"
+    # Remove last error file
+    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
+}
+
+##
 # Registry to save connection informations to a mysql server
 # @param string $1 Host
 # @param string $2 Username
@@ -296,59 +331,29 @@ function mysqlConnect ()
         return 1
     fi
 
-    # Try to connect to mysql server and use database
-    local MYSQL_OPTIONS MYSQL_DRYRUN
-    MYSQL_OPTIONS=$(__mysql_options "${MYSQL_HOST}" "${MYSQL_USER}" "${MYSQL_PASS}" "${MYSQL_TO}")
-    MYSQL_DRYRUN=$(mysql ${MYSQL_OPTIONS} -e "USE ${MYSQL_DB};" 2>&1 >/dev/null)
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    # Create link to connection and save it
     local MYSQL_CHECKSUM_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    echo -e "${MYSQL_HOST}\n${MYSQL_USER}\n${MYSQL_PASS}\n${MYSQL_DB}\n${MYSQL_TO}\n${MYSQL_CACHED}" > "${MYSQL_CHECKSUM_FILE}"
+    if [[ ! -f "${MYSQL_CHECKSUM_FILE}" ]]; then
+        # Try to connect to mysql server and use database
+        local MYSQL_OPTIONS MYSQL_DRYRUN
+        MYSQL_OPTIONS=$(__mysql_options "${MYSQL_HOST}" "${MYSQL_USER}" "${MYSQL_PASS}" "${MYSQL_TO}")
+        MYSQL_DRYRUN=$(mysql ${MYSQL_OPTIONS} -e "USE ${MYSQL_DB};" 2>&1 >/dev/null)
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        # Create link for this connection and save properties
+        echo -e "${MYSQL_HOST}\n${MYSQL_USER}\n${MYSQL_PASS}\n${MYSQL_DB}\n${MYSQL_TO}\n${MYSQL_CACHED}" > "${MYSQL_CHECKSUM_FILE}"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+    fi
 
     echo -n "${MYSQL_CHECKSUM}"
 }
 
 ##
-# Gets the number of affected rows in a previous MySQL operation
-# Returns the number of rows affected by the last INSERT, UPDATE, REPLACE or DELETE query.
-# @param string $1 Database Link
-# @return int
-function mysqlAffectedRows ()
-{
-    local MYSQL_CHECKSUM="$1"
-    local MYSQL_AFFECTED_ROW_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_AFFECTED_ROW_EXT}"
-    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_AFFECTED_ROW_FILE}" ]]; then
-        echo -n "0"
-    else
-        cat "${MYSQL_AFFECTED_ROW_FILE}"
-    fi
-}
-
-##
-# Clean workspace of opened database connections and results
-# @param int $1 Database link
-# @returnStatus 1 If workspace does not exist
-function mysqlClose ()
-{
-    local MYSQL_CHECKSUM="$1"
-    local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_CONNECT_FILE}" ]]; then
-        return 1
-    fi
-
-    # Remove connection file
-    rm -f "${MYSQL_CONNECT_FILE}"
-    # Remove all result files
-    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}*${BP_MYSQL_RESULT_EXT}"
-    # Remove last error file
-    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
-}
-
-##
 # Returns a string description of the last error
+# If link is on error or there is no affected rows for this connexion
 # @param int Database link
 # @return string
 function mysqlLastError ()
@@ -467,18 +472,18 @@ function mysqlFetchRaw ()
 
 ##
 # Gets the number of rows in a result
+# If link does not exist or no result was returned on this connexion, -1 is returned
 # @param string $1 Result Link
 # @return int
-# @returnStatus 1 If result link does not exist
 function mysqlNumRows ()
 {
     local MYSQL_QUERY_CHECKSUM="$1"
     local MYSQL_QUERY_RESULT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
     if [[ -z "${MYSQL_QUERY_CHECKSUM}" || ! -f "${MYSQL_QUERY_RESULT_FILE}" ]]; then
-        return 1
+        echo -n "-1"
+    else
+        echo -n $(wc -l < "${MYSQL_QUERY_RESULT_FILE}")
     fi
-
-    echo -n $(wc -l < "${MYSQL_QUERY_RESULT_FILE}")
 }
 
 ##
@@ -492,7 +497,7 @@ function mysqlOption ()
 {
     local MYSQL_CHECKSUM="$1"
     local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_CONNECT_FILE}" ]]; then
+    if [[ -z "${MYSQL_CHECKSUM}" || ! -f "${MYSQL_CONNECT_FILE}" || -z "$2" || -z "$3" ]]; then
         return 1
     fi
 
@@ -500,11 +505,11 @@ function mysqlOption ()
     case "${MYSQL_OPTION}" in
         ${BP_MYSQL_TO})
             declare -i CONNECT_TIMEOUT="$3"
-            sed -i "${BP_MYSQL_TO}s/.*/${CONNECT_TIMEOUT}/" "${MYSQL_CONNECT_FILE}"
+            sed -i -e $((${BP_MYSQL_TO}+1))'s/.*/'${CONNECT_TIMEOUT}'/' "${MYSQL_CONNECT_FILE}"
             ;;
         ${BP_MYSQL_CACHED})
             declare -i CACHED="$3"
-            sed -i "${BP_MYSQL_CACHED}s/.*/${CACHED}/" "${MYSQL_CONNECT_FILE}"
+            sed -i -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${CACHED}'/' "${MYSQL_CONNECT_FILE}"
             ;;
         *) return 1 ;;
     esac
