@@ -16,6 +16,7 @@
 * Function mysqlFetchAll
 * Function mysqlFetchAssoc
 * Function mysqlFetchArray
+* Function mysqlFetchRaw
 * Function mysqlNumRows
 * Function mysqlOption
 * Function mysqlQuery

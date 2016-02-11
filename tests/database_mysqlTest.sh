@@ -12,7 +12,9 @@ declare -r -i TEST_DATABASE_MYSQL_SELECT_SIZE=3
 declare -r -i TEST_DATABASE_MYSQL_TO=1
 declare -r TEST_DATABASE_MYSQL_SELECT_ROWS="SELECT * FROM rv;"
 declare -r TEST_DATABASE_MYSQL_SELECT_ONE_ROW="SELECT * FROM rv LIMIT 1;"
+declare -r TEST_DATABASE_MYSQL_SELECT_ONE_ROW_VALUE="1	First"
 declare -r TEST_DATABASE_MYSQL_BAD_SELECT="SELECT * FROM vv;"
+declare -r TEST_DATABASE_MYSQL_EXOTIC_SELECT="SELECT * FROM rv2;"
 declare -r TEST_DATABASE_MYSQL_INSERT="INSERT INTO rv (id, name) VALUES (3, FLOOR(RAND()*1000)) ON DUPLICATE KEY UPDATE name=VALUES(name);"
 declare -r TEST_DATABASE_MYSQL_STR_SQUOTED="value'DELETE FROM"
 declare -r TEST_DATABASE_MYSQL_STR_PSQUOTED="value\'DELETE FROM"
@@ -173,26 +175,113 @@ function test_mysqlFetchAll ()
 }
 
 
-readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC="-01"
+readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC="-11-11-11-0111111111"
 
 function test_mysqlFetchAssoc ()
 {
-    echo -n "-01"
+    local TEST DB_TEST LINE_TEST
+
+    DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+
+    # Check with no database link
+    TEST=$(mysqlFetchAssoc)
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link but no query
+    TEST=$(mysqlFetchAssoc "${DB_TEST}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and fake query
+    TEST=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and query
+    TEST=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
+    echo -n "-$?"
+    if [[ -n "$TEST" ]]; then
+        echo -n "1"
+        while read -r LINE_TEST; do
+            declare -A ARRAY_TEST="$LINE_TEST"
+            [[ "${ARRAY_TEST[name]}" == "FirsT value" ]] && echo -n 1
+            [[ "${ARRAY_TEST[name]}" == "Secon'd" ]] && echo -n 1
+            [[ "${ARRAY_TEST[name]}" == "Thi\"rd\"" ]] && echo -n 1
+            [[ "${ARRAY_TEST[name]}" == "Quarter" ]] && echo -n 1
+            [[ "${#ARRAY_TEST[@]}" -eq 2 && "${ARRAY_TEST[id]}" -gt 0 ]] && echo -n 1
+        done <<<"$TEST"
+    fi
 }
 
 
-readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY="-01"
+readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY="-11-11-11-0111111111"
 
 function test_mysqlFetchArray ()
 {
-    echo -n "-01"
+    local TEST DB_TEST LINE_TEST
+
+    DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+
+    # Check with no database link
+    TEST=$(mysqlFetchArray)
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link but no query
+    TEST=$(mysqlFetchArray "${DB_TEST}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and fake query
+    TEST=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and query
+    TEST=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
+    echo -n "-$?"
+    if [[ -n "$TEST" ]]; then
+        echo -n "1"
+        while read -r LINE_TEST; do
+            declare -a ARRAY_TEST="$LINE_TEST"
+            [[ "${ARRAY_TEST[1]}" == "FirsT value" ]] && echo -n 1
+            [[ "${ARRAY_TEST[1]}" == "Secon'd" ]] && echo -n 1
+            [[ "${ARRAY_TEST[1]}" == "Thi\"rd\"" ]] && echo -n 1
+            [[ "${ARRAY_TEST[1]}" == "Quarter" ]] && echo -n 1
+            [[ "${#ARRAY_TEST[@]}" -eq 2 ]] && echo -n 1
+        done <<<"$TEST"
+    fi
 }
 
-readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW="-01"
+
+readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW="-11-11-11-01"
 
 function test_mysqlFetchRaw ()
 {
-    echo -n "-01"
+    local TEST DB_TEST
+
+    DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+
+    # Check with no database link
+    TEST=$(mysqlFetchRaw)
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link but no query
+    TEST=$(mysqlFetchRaw "${DB_TEST}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and fake query
+    TEST=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with database link and query
+    TEST=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
+    echo -n "-$?"
+    [[ "$TEST" == "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW_VALUE}" ]] && echo -n 1
 }
 
 

@@ -208,6 +208,7 @@ function __mysql_fetch_array ()
         {
             printf("(")
             for (i=1;i<=NF;i++) {
+                gsub("\"","\\\"",$i)
                 printf("[%d]=\"%s\" ", (i-1), $i)
             }
             printf(")\n")
@@ -224,18 +225,24 @@ function __mysql_fetch_assoc ()
 {
     local MYSQL_QUERY_CHECKSUM="$1"
     local MYSQL_SRC_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-    if [[ -z "${MYSQL_QUERY_CHECKSUM}" || ! -f "${MYSQL_SRC_FILE}" ]]; then
+    local MYSQL_NMS_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_COLUMN_NAMES_EXT}"
+    if [[ -z "${MYSQL_QUERY_CHECKSUM}" || ! -f "${MYSQL_SRC_FILE}" || ! -f "${MYSQL_NMS_FILE}" ]]; then
         return 1
     fi
-    local MYSQL_NMS_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_COLUMN_NAMES_EXT}"
-    local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_NUM}${BP_MYSQL_RESULT_EXT}"
-
+    local MYSQL_COLUMN_NAMES=$(cat "${MYSQL_NMS_FILE}")
+    local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_ASSOC}${BP_MYSQL_RESULT_EXT}"
+rm -f "${MYSQL_DST_FILE}"
     if [[ ! -f "${MYSQL_DST_FILE}" ]]; then
-        awk 'BEGIN { FS="\x09" }
+        awk -v cn="${MYSQL_COLUMN_NAMES}" '
+        BEGIN {
+            FS="\x09"
+            split(cn, h, " ");
+        }
         {
             printf("(")
             for (i=1;i<=NF;i++) {
-                printf("[%d]=\"%s\" ", (i-1), $i)
+                gsub("\"","\\\"",$i)
+                printf("[%s]=\"%s\" ", h[i], $i)
             }
             printf(")\n")
         }' "${MYSQL_SRC_FILE}" > "${MYSQL_DST_FILE}"
