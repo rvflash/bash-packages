@@ -72,6 +72,34 @@ function test_includeOnce ()
 }
 
 
+readonly TEST_PHYSICAL_DIRNAME="-01-01-11-01"
+
+function test_physicalDirname ()
+{
+    local TEST
+
+    # Check nothing
+    TEST=$(physicalDirname)
+    echo -n "-$?"
+    [[ "$TEST" == "$PWD" ]] && echo -n 1
+
+    # Check real path
+    TEST=$(physicalDirname "${TEST_FILE_USER_HOME}")
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_FILE_USER_HOME" ]] && echo -n 1
+
+    # Check fake path
+    TEST=$(physicalDirname "${TEST_FILE_FAKE_PATH}")
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check relative path
+    TEST=$(physicalDirname "${TEST_FILE_RELATIVE_PATH}")
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_FILE_BP_HOME" ]] && echo -n 1
+}
+
+
 readonly TEST_REALPATH="-11-01-11-01-01-01"
 
 function test_realpath ()
@@ -153,31 +181,31 @@ function test_resolvePath ()
 }
 
 
-readonly TEST_PHYSICAL_DIRNAME="-01-01-11-01"
+readonly TEST_SCAN_DIRECTORY="-01-01-11-01"
 
-function test_physicalDirname ()
+function test_scanDirectory ()
 {
     local TEST
 
     # Check nothing
-    TEST=$(physicalDirname)
+    TEST=$(scanDirectory)
     echo -n "-$?"
-    [[ "$TEST" == "$PWD" ]] && echo -n 1
+    [[ "$TEST" == "unit" ]] && echo -n 1
 
     # Check real path
-    TEST=$(physicalDirname "${TEST_FILE_USER_HOME}")
+    TEST=$(scanDirectory "${TEST_FILE_USER_HOME}")
     echo -n "-$?"
-    [[ "$TEST" == "$TEST_FILE_USER_HOME" ]] && echo -n 1
+    [[ -n "$TEST" ]] && echo -n 1
 
     # Check fake path
-    TEST=$(physicalDirname "${TEST_FILE_FAKE_PATH}")
+    TEST=$(scanDirectory "${TEST_FILE_FAKE_PATH}")
     echo -n "-$?"
     [[ -z "$TEST" ]] && echo -n 1
 
     # Check relative path
-    TEST=$(physicalDirname "${TEST_FILE_RELATIVE_PATH}")
+    TEST=$(scanDirectory "../")
     echo -n "-$?"
-    [[ "$TEST" == "$TEST_FILE_BP_HOME" ]] && echo -n 1
+    [[ -n "$TEST" ]] && echo -n 1
 }
 
 
@@ -196,7 +224,8 @@ function test_userHome ()
 # Launch all functional tests
 bashUnit "include" "${TEST_INCLUDE}" "$(test_include)"
 bashUnit "includeOnce" "${TEST_INCLUDE_ONCE}" "$(test_includeOnce)"
+bashUnit "physicalDirname" "${TEST_PHYSICAL_DIRNAME}" "$(test_physicalDirname)"
 bashUnit "realpath" "${TEST_REALPATH}" "$(test_realpath)"
 bashUnit "resolvePath" "${TEST_RESOLVE_PATH}" "$(test_resolvePath)"
-bashUnit "physicalDirname" "${TEST_PHYSICAL_DIRNAME}" "$(test_physicalDirname)"
+bashUnit "scanDirectory" "${TEST_SCAN_DIRECTORY}" "$(test_scanDirectory)"
 bashUnit "userHome" "${TEST_USER_HOME}" "$(test_userHome)"
