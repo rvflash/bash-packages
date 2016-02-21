@@ -45,6 +45,30 @@ function includeOnce ()
 }
 
 ##
+# Returns the complete directory's path
+# @param string $1 Filepath
+# @return string Dir
+# @returnStatus 1 If first parameter named dir does not exists
+function physicalDirname ()
+{
+    local DIR="$1"
+    if [[ -z "$DIR" ]]; then
+        # Get current directory path
+        DIR="$PWD"
+    elif [[ ! -d "$DIR" ]]; then
+        # DirPath is not a directory
+        DIR="$(dirname "$DIR")"
+    fi
+
+    DIR="$(cd "$DIR" 2>/dev/null && pwd -P)"
+    if [[ $? -eq 0 && -n "$DIR" ]]; then
+        echo -n "${DIR}"
+    else
+        return 1
+    fi
+}
+
+##
 # Returns canonicalized absolute pathname
 # Expands all symbolic links and resolves references to '/./', '/../' and extra '/' characters in the input path
 # @param string $1 path
@@ -137,29 +161,38 @@ function resolvePath ()
 }
 
 ##
-# Returns the complete directory's path
-# @param string $1 Filepath
-# @return string Dir
-# @returnStatus 1 If first parameter named dir does not exists
-function physicalDirname ()
+# List files and directories inside the specified path
+# @param string $1 Path
+# @param int $2 WithFile If O, list only directories, otherwise list all files and directories
+# @param int $2 CompletePath If 0, list only the directory or files names, otherwise the complete path
+# @return string
+# @returnStatus 1 If first parameter named path does not exist or not a folder
+function scanDirectory ()
 {
-    local DIR="$1"
-    if [[ -z "$DIR" ]]; then
-        # Get current directory path
-        DIR="$PWD"
-    elif [[ ! -d "$DIR" ]]; then
-        # DirPath is not a directory
-        DIR="$(dirname "$DIR")"
+    local SOURCE_DIR="$1"
+    if [[ -z "${SOURCE_DIR}" ]]; then
+        SOURCE_DIR="$(dirname "$0")"
     fi
-
-    DIR="$(cd "$DIR" 2>/dev/null && pwd -P)"
-    if [[ $? -eq 0 && -n "$DIR" ]]; then
-        echo -n "${DIR}"
-    else
+    SOURCE_DIR="$(realpath "${SOURCE_DIR}")"
+    if [[ $? -ne 0 || -z "${SOURCE_DIR}" ]]; then
         return 1
     fi
-}
+    declare -i WITH_FILE="$2"
+    declare -i COMPLETE_PATH="$3"
 
+    local SCAN_DIR
+    if [[ ${WITH_FILE} -eq 0 ]]; then
+        SCAN_DIR=$(ls -d "${SOURCE_DIR}"/*/)
+    else
+        SCAN_DIR=$(ls -d "${SOURCE_DIR}"/*)
+    fi
+
+    if [[ ${COMPLETE_PATH} -eq 0 ]]; then
+        echo -e "${SCAN_DIR}" | sed -e "s/\/$//g" -e "s/^.*\///g"
+    else
+        echo -e "${SCAN_DIR}"
+    fi
+}
 
 ##
 # Returns path to user home
