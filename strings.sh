@@ -43,6 +43,54 @@ function isEmpty ()
 }
 
 ##
+# Print a string and apply on it a left padding
+# @param string $1 String
+# @param int $2 Pad length
+# @param string $3 Padding char
+# @return string
+function printLeftPadding ()
+{
+    local STR="$1"
+    declare -i PAD="$2"
+    local CHR="$3"
+
+    if [[ -z "${CHR}" ]]; then
+        PAD+=${#STR}
+        printf "%${PAD}s" "$STR"
+    else
+        if [[ ${PAD} -gt 1 ]]; then
+            local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
+            printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
+        fi
+        echo -n " ${STR}"
+    fi
+}
+
+##
+# Print a string and apply on it a right padding
+# @param string $1 String
+# @param int $2 Pad length
+# @param string $3 Padding char
+# @return string
+function printRightPadding ()
+{
+    local STR="$1"
+    declare -i PAD="$2"
+    local CHR="$3"
+
+    if [[ -z "${CHR}" ]]; then
+        PAD+=${#STR}
+        printf "%-${PAD}s" "$STR"
+    else
+        echo -n "${STR} "
+        if [[ ${PAD} -gt 1 ]]; then
+            local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
+            printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
+        fi
+    fi
+}
+
+##
 # This function returns a string with whitespace (or other characters) stripped from the beginning and end of str
 # @param string $1 String
 # @param string $2 Character to mask [optional]
