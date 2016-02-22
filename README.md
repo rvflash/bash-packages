@@ -23,7 +23,9 @@
 
 ## Package encoding/yaml
 * Function yamlDecode
+* Function yamlEncode
 * Function yamlFileDecode
+* Function yamlFileEncode
 
 ## Package encoding/base64
 * Function base64Decode
@@ -32,9 +34,10 @@
 ## Package file
 * Function include
 * Function includeOnce
+* Function physicalDirname
 * Function realpath
 * Function resolvePath
-* Function physicalDirname
+* Function scanDirectory
 * Function userHome
 
 ## Package math
@@ -55,6 +58,8 @@
 ## Package strings
 * Function checksum
 * Function isEmpty
+* Function printLeftPadding
+* Function printRightPad
 * Function trim
 
 ## Package term
