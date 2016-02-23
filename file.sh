@@ -7,7 +7,7 @@ declare -r BP_USER_NAME="$(logname)"
 ##
 # The include statement includes and evaluates the specified file.
 # @param string $1 File
-# @param int $2 OnceMode If 1, enabled once mode
+# @param int $2 OnceMode If 1, enabled once mode [optional]
 # @returnStatus 1 If first parameter named path does not exist
 function include ()
 {
@@ -111,8 +111,8 @@ function realpath ()
 ##
 # Resolve all shortcut patterns in a path (.. | ~/ | etc.)
 # To check if the path is valid, see realpath function
-# @param string $1 Path
-# @param string $2 SourceDir
+# @param string $1 Path [optional]
+# @param string $2 SourceDir [optional]
 # @return string
 function resolvePath ()
 {
@@ -163,8 +163,8 @@ function resolvePath ()
 ##
 # List files and directories inside the specified path
 # @param string $1 Path
-# @param int $2 WithFile If O, list only directories, otherwise list all files and directories
-# @param int $2 CompletePath If 0, list only the directory or files names, otherwise the complete path
+# @param int $2 WithFile If O, list only directories, otherwise list all files and directories [optional]
+# @param int $2 CompletePath If 0, list only the directory or files names, otherwise the complete path [optional]
 # @return string
 # @returnStatus 1 If first parameter named path does not exist or not a folder
 function scanDirectory ()

@@ -174,9 +174,9 @@ function arrayToString ()
     fi
 
     # Remove declare -OPTIONS NAME='(
-    ARRAY_TO_STRING="${ARRAY_TO_STRING#*(}"
+    ARRAY_TO_STRING="${ARRAY_TO_STRING#*\(}"
     # Remove )'
-    ARRAY_TO_STRING="${ARRAY_TO_STRING%)*}"
+    ARRAY_TO_STRING="${ARRAY_TO_STRING%\)*}"
     # Remove escaping of single quote (') by declare function
     ARRAY_TO_STRING="${ARRAY_TO_STRING//\\\'\'/}"
 

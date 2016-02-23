@@ -6,6 +6,9 @@ source ../strings.sh
 # Default entries
 declare -r TEST_STRINGS_MASK="()"
 declare -r -i TEST_STRINGS_CHK=3159589107
+declare -r TEST_STRINGS_BOX_SIZE=60
+declare -r TEST_STRINGS_WITH_LEADING_DOT_PAD="................... Text without leading or trailing spaces"
+declare -r TEST_STRINGS_WITH_TRAILING_DOT_PAD="Text without leading or trailing spaces ..................."
 declare -r TEST_STRINGS_WITHOUT_SPACES="Text without leading or trailing spaces"
 declare -r TEST_STRINGS_WITH_LEADING_SPACES=" ${TEST_STRINGS_WITHOUT_SPACES}"
 declare -r TEST_STRINGS_WITH_TRAILING_SPACES="${TEST_STRINGS_WITHOUT_SPACES} "
@@ -88,6 +91,53 @@ function test_isEmpty ()
 }
 
 
+readonly TEST_STRINGS_PRINT_LEFT_PADDING="-01-01-01"
+
+function test_printLeftPadding ()
+{
+    local TEST
+
+    # Check nothing
+    TEST=$(printLeftPadding)
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with one leading space
+    TEST=$(printLeftPadding "${TEST_STRINGS_WITHOUT_SPACES}" 1)
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_STRINGS_WITH_LEADING_SPACES" ]] && echo -n 1
+
+    # Check with one leading dash
+    TEST=$(printLeftPadding "${TEST_STRINGS_WITHOUT_SPACES}" 20 ".")
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_STRINGS_WITH_LEADING_DOT_PAD" ]] && echo -n 1
+
+}
+
+
+readonly TEST_STRINGS_PRINT_RIGHT_PADDING="-01-01-01"
+
+function test_printRightPadding ()
+{
+    local TEST
+
+    # Check nothing
+    TEST=$(printRightPadding)
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with one trailing space
+    TEST=$(printRightPadding "${TEST_STRINGS_WITHOUT_SPACES}" 1)
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_STRINGS_WITH_TRAILING_SPACES" ]] && echo -n 1
+
+    # Check with one leading dash
+    TEST=$(printRightPadding "${TEST_STRINGS_WITHOUT_SPACES}" 20 ".")
+    echo -n "-$?"
+    [[ "$TEST" == "$TEST_STRINGS_WITH_TRAILING_DOT_PAD" ]] && echo -n 1
+}
+
+
 readonly TEST_STRINGS_TRIM="-01-01-01-01-01-01"
 
 function test_trim ()
@@ -129,4 +179,6 @@ function test_trim ()
 # Launch all functional tests
 bashUnit "checksum" "${TEST_STRINGS_CHECKSUM}" "$(test_checksum)"
 bashUnit "isEmpty" "${TEST_STRINGS_EMPTY}" "$(test_isEmpty)"
+bashUnit "printLeftPadding" "${TEST_STRINGS_PRINT_LEFT_PADDING}" "$(test_printLeftPadding)"
+bashUnit "printRightPadding" "${TEST_STRINGS_PRINT_RIGHT_PADDING}" "$(test_printRightPadding)"
 bashUnit "trim" "${TEST_STRINGS_TRIM}" "$(test_trim)"

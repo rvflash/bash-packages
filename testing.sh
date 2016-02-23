@@ -9,7 +9,7 @@ declare -r BP_UNIT_TEST_FILE_SUFFIX="Test.sh"
 # @param string $1 Method's name
 # @param string $2 Expected string
 # @param string $3 Received string to compare with expected string
-# @exit 1 If one the three parameters are empty
+# @exit 1 If one of the three parameters are empty
 function bashUnit ()
 {
     local METHOD="$1"
