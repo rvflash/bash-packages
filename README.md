@@ -59,7 +59,7 @@
 * Function checksum
 * Function isEmpty
 * Function printLeftPadding
-* Function printRightPad
+* Function printRightPadding
 * Function trim
 
 ## Package term
