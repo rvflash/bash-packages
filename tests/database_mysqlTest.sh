@@ -167,14 +167,6 @@ function test_mysqlLastError ()
 }
 
 
-readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ALL="-01"
-
-function test_mysqlFetchAll ()
-{
-    echo -n "-01"
-}
-
-
 readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC="-11-11-11-0111111111"
 
 function test_mysqlFetchAssoc ()
@@ -285,6 +277,29 @@ function test_mysqlFetchRaw ()
 }
 
 
+readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ALL="-01-01-01"
+
+function test_mysqlFetchAll ()
+{
+    local TEST
+
+    # Check mysqlFetchAssoc only
+    TEST=$(test_mysqlFetchAssoc)
+    echo -n "-$?"
+    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC}" ]] && echo -n 1
+
+    # Check mysqlFetchArray only
+    TEST=$(test_mysqlFetchArray)
+    echo -n "-$?"
+    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY}" ]] && echo -n 1
+
+    # Check mysqlFetchRaw only
+    TEST=$(test_mysqlFetchRaw)
+    echo -n "-$?"
+    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW}" ]] && echo -n 1
+}
+
+
 readonly TEST_DATABASE_MYSQL_MYSQL_NUM_ROWS="-01-01-001"
 
 function test_mysqlNumRows ()
@@ -338,7 +353,7 @@ function test_mysqlOption ()
     # Check with all required paramaters
     TEST=$(mysqlOption "${DB_TEST}" "${BP_MYSQL_TO}" "${TEST_DATABASE_MYSQL_TO}")
     echo -n "-$?"
-    [[ -z "${TEST}" && $(sed -n "$((${BP_MYSQL_TO}+1))p" "${BP_MYSQL_WRK_DIR}/${DB_TEST}${BP_MYSQL_CONNECT_EXT}") -eq ${TEST_DATABASE_MYSQL_TO} ]] && echo -n 1
+    [[ -z "${TEST}" && -n "${DB_TEST}" &&  $(sed -n "$((${BP_MYSQL_TO}+1))p" "${BP_MYSQL_WRK_DIR}/${DB_TEST}${BP_MYSQL_CONNECT_EXT}") -eq ${TEST_DATABASE_MYSQL_TO} ]] && echo -n 1
 }
 
 
