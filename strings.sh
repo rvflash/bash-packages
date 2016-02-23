@@ -2,18 +2,19 @@
 
 ##
 # Calculate and return a checksum for one string
-# @param string $1 String
+# @param string $1 Str
 # @return string
 # @returnStatus If first parameter named string is empty
 # @returnStatus If checkum is empty or cksum methods returns in error
 function checksum ()
 {
-    if [[ -z "$1" ]]; then
+    local STR="$1"
+    if [[ -z "$STR" ]]; then
         return 1
     fi
 
     local CHECKSUM
-    CHECKSUM="$(cksum <<<"$(trim "$1")" | awk '{print $1}')"
+    CHECKSUM="$(cksum <<<"$(trim "$STR")" | awk '{print $1}')"
     if [[ $? -ne 0 || -z "$CHECKSUM" ]]; then
         return 1
     fi
@@ -30,12 +31,12 @@ function checksum ()
 #     0.0 (0 as a float)
 #     FALSE
 #     array() (an empty array)
-#
+# @param string $1 Str
 # @returnStatus 1 If empty, 0 otherwise
 function isEmpty ()
 {
-    local VAR="$1"
-    if [[ -z "${VAR}" || "${VAR}" == 0 || "${VAR}" == "0.0" || "${VAR}" == false || "${VAR}" =~ ^\(([[:space:]]*)?\)*$ ]]; then
+    local STR="$1"
+    if [[ -z "$STR" || "$STR" == 0 || "$STR" == "0.0" || "$STR" == false || "$STR" =~ ^\(([[:space:]]*)?\)*$ ]]; then
         return 0
     fi
 
@@ -44,9 +45,9 @@ function isEmpty ()
 
 ##
 # Print a string and apply on it a left padding
-# @param string $1 String
+# @param string $1 Str
 # @param int $2 Pad length
-# @param string $3 Padding char
+# @param string $3 Padding char [optional]
 # @return string
 function printLeftPadding ()
 {
@@ -62,15 +63,15 @@ function printLeftPadding ()
             local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
             printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
         fi
-        echo -n " ${STR}"
+        echo -n " $STR"
     fi
 }
 
 ##
 # Print a string and apply on it a right padding
-# @param string $1 String
+# @param string $1 Str
 # @param int $2 Pad length
-# @param string $3 Padding char
+# @param string $3 Padding char [optional]
 # @return string
 function printRightPadding ()
 {
@@ -82,7 +83,7 @@ function printRightPadding ()
         PAD+=${#STR}
         printf "%-${PAD}s" "$STR"
     else
-        echo -n "${STR} "
+        echo -n "$STR "
         if [[ ${PAD} -gt 1 ]]; then
             local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
             printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
@@ -92,7 +93,7 @@ function printRightPadding ()
 
 ##
 # This function returns a string with whitespace (or other characters) stripped from the beginning and end of str
-# @param string $1 String
+# @param string $1 Str
 # @param string $2 Character to mask [optional]
 # @return string
 function trim ()

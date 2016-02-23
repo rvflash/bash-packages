@@ -10,21 +10,22 @@
 #
 # @param string $1 Yaml string to parse
 # @return arrayToString
+# @returnStatus 1 If first parameter named str is empty or invalid
 function yamlDecode ()
 {
-    local YAML="$1"
-    if [[ -z "$YAML" || "$YAML" != *" : "* ]]; then
+    local STR="$1"
+    if [[ -z "${STR}" || "${STR}" != *" : "* ]]; then
         echo -n "()"
         return 1
     fi
 
     # Remove comment lines, empty lines and format line to build associative array for bash
-    YAML=$(echo "${YAML}" | sed -e "/^#/d" -e "/^$/d" -e "s/\"/'/g" -e "s/=//g" -e "s/\ :[^:\/\/]/=\"/g" -e "s/$/\"/g" -e "s/ *=/]=/g" -e "s/^/[/g")
+    STR=$(echo "${STR}" | sed -e "/^#/d" -e "/^$/d" -e "s/\"/'/g" -e "s/=//g" -e "s/\ :[^:\/\/]/=\"/g" -e "s/$/\"/g" -e "s/ *=/]=/g" -e "s/^/[/g")
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    echo -n "(${YAML})"
+    echo -n "(${STR})"
 }
 
 ##
@@ -32,13 +33,14 @@ function yamlDecode ()
 # @example '([K1]="Value 1" [K2]="V2")'
 # @param arrayToString $1 Associative array
 # @return string
+# @returnStatus 1 If first parameter named str is empty
 function yamlEncode ()
 {
-    local YAML="$1"
-    if [[ -z "${YAML}" || "()" == "${YAML}" ]]; then
+    local STR="$1"
+    if [[ -z "${STR}" || "()" == "${STR}" ]]; then
         return 1
     fi
-    declare -A YAML="${YAML}"
+    declare -A YAML="${STR}"
 
     # Get left column padding
     local KEY
@@ -60,6 +62,8 @@ function yamlEncode ()
 # @example '([K1]="V1" [K2]="V2")'
 # @param string $1 Yaml file path to parse
 # @return arrayToString
+# @returnStatus 1 If first parameter named filePath is empty or unexisting
+# @returnStatus 1 If Yaml file is invalid
 function yamlFileDecode ()
 {
     local FILE_PATH="$1"
@@ -79,7 +83,9 @@ function yamlFileDecode ()
 # Encodes a bash associative array and save it as Yaml file
 # @param arrayToString $1 Associative array
 # @param string $2 Yaml file path to create
-# @return arrayToString
+# @return void
+# @returnStatus 1 If first parameter named str is empty
+# @returnStatus 1 If second parameter named filePath is empty or invalid
 function yamlFileEncode ()
 {
     local YAML="$1"

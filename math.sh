@@ -83,7 +83,7 @@ function int ()
 
 ##
 # Finds whether the type of a variable is float
-# @param string $1 Var
+# @param string $1
 # @returnStatus 1 If first parameter named var is not a float
 function isFloat ()
 {
@@ -98,7 +98,7 @@ function isFloat ()
 
 ##
 # Find whether the type of a variable is integer
-# @param string $1 Var
+# @param string $1
 # @returnStatus 1 If first parameter named var is not an integer
 function isInt ()
 {
@@ -127,8 +127,8 @@ function isNumeric ()
 ##
 # First float value is greater than the second ?
 # @param float $1
-# @param float $2
-# @return int If $1 is greater than $2 then 1, 0 otherwise
+# @param float|int $2
+# @returnStatus 1 If $1 is greater than $2, 0 otherwise
 function isFloatGreaterThan ()
 {
     local VAR_1="$1"
@@ -165,8 +165,8 @@ function isFloatGreaterThan ()
 ##
 # First float value is lower than the second ?
 # @param float Var1
-# @param float Var2
-# @returnStatus 1 If first parameter named var is not numeric
+# @param float|int Var2
+# @returnStatus 1 If $1 is lower than $2, 0 otherwise
 function isFloatLowerThan ()
 {
     if isFloatGreaterThan "$2" "$1"; then
@@ -202,7 +202,7 @@ function floor ()
 # - "int" via constant named BP_UNKNOWN_TYPE
 # - "unknown" via constant named BP_UNKNOWN_TYPE
 #
-# @param stringableNumeric $1
+# @param mixed $1
 # @return string
 function numericType ()
 {
