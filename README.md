@@ -15,7 +15,7 @@
 
 * Function mysqlAffectedRows ( int resultLink ) int `?=0`
 * Function mysqlClose ( int databaseLink ) void `?>0 If database link does not exist`
-* Function mysqlConnect ( string host, string user, string pass, string database [ , int connectTimeout 1s, int cached 0 ] ) int `?=2 If mysql method does not exist, 1 in case of error, 0 otherwise`
+* Function mysqlConnect ( string host, string user, string pass, string database [ , int connectTimeout 0, int cached 0 ] ) int `?=2 If mysql method does not exist, 1 in case of error, 0 otherwise`
 * Function mysqlEscapeString ( string str ) string `?=0`
 * Function mysqlLastError ( int databaseLink ) string `?=0`
 * Function mysqlFetchAll ( int databaseLink, string query [ , string options[ "raw", "num", "assoc" ] "num" ] ) string `?>0 In case of error`
@@ -89,6 +89,7 @@
 
 * Function confirm ( string message [ , string extendedMessage ] ) void `?=0 for yes, 1 for no`
 * Function dialog ( string message [ , int mandatory 1, string mandatoryMessage ] ) string `?=0`
+* Function progressBar ( string name, int step, int max, [ , string error "An error occured", int width 20, string charEmpty -, string charFilled + ] ) string `?>0 In case of error`
 * Function windowSize ( [ string type ] ) int | array `?>0 If stty size method returns in error`
 
 
