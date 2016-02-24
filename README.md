@@ -3,7 +3,7 @@
 ## Package array
 
 * Function arrayDiff ( array haystack1, array haystack2 ) array `?=0`
-* Function  ( string needle, array haystack ) mixed `?=0 if needle is found, 1 otherwise`
+* Function arraySearch ( string needle, array haystack ) mixed `?=0 if needle is found, 1 otherwise`
 * Function arrayToString ( string arrayDeclaration ) string `?=0`
 * Function count ( mixed value ) int `?=0`
 * Function inArray ( string needle, array haystack ) void `?=0 if needle is found, 1 otherwise`
@@ -45,6 +45,7 @@
 
 ## Package file
 
+* Function import ( ...string path ) void `?>0 If one of the list of file path does not exist`
 * Function include ( string path [ , int onceMode 0 ] ) void `?>0 If file does not exist`
 * Function includeOnce ( string path ) void `?>0 If file does not exist`
 * Function physicalDirname ( string path ) string `?>0 If directory does not exist`

@@ -16,6 +16,35 @@ declare -r TEST_FILE_RETURN_01="test01"
 declare -r TEST_FILE_PATH_02="unit/test02.sh"
 declare -r TEST_FILE_RETURN_02="test02"
 
+
+readonly TEST_IMPORT="-11-11-01-01"
+
+function test_import ()
+{
+     local TEST
+
+    # Check nothing
+    import
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with valid path and fake path
+    import "${TEST_FILE_PATH_02}" "${TEST_FILE_FAKE_PATH}"
+    echo -n "-$?"
+    [[ -z "$TEST" ]] && echo -n 1
+
+    # Check with both, valid relative path and valid absolute path
+    import "${TEST_FILE_PATH_01}" "${TEST_FILE_PATH_02}"
+    echo -n "-$?"
+    [[ "$(test02)" == "$TEST_FILE_RETURN_02" ]] && echo -n 1
+
+    # Check with redundant valid relative path and valid absolute path
+    import "${TEST_FILE_PATH_01}" "${TEST_FILE_PATH_02}" "${TEST_FILE_PATH_02}"
+    echo -n "-$?"
+    [[ "$(test02)" == "$TEST_FILE_RETURN_02" ]] && echo -n 1
+}
+
+
 readonly TEST_INCLUDE="-11-01-01-11"
 
 function test_include ()
@@ -40,7 +69,7 @@ function test_include ()
     # Check fake path
     TEST=$(include "${TEST_FILE_FAKE_PATH}")
     echo -n "-$?"
-    [[ "$TEST" == "$BP_FILE_NOT_EXISTS" ]] && echo -n 1
+    [[ -z "$TEST" ]] && echo -n 1
 }
 
 
@@ -53,7 +82,7 @@ function test_includeOnce ()
     # Check nothing
     TEST=$(includeOnce)
     echo -n "-$?"
-    [[ "$TEST" == "$BP_FILE_NOT_EXISTS" ]] && echo -n 1
+    [[ -z "$TEST" ]] && echo -n 1
 
     # Check relative path (absolute path was tested with include method)
     includeOnce "${TEST_FILE_PATH_02}"
@@ -68,7 +97,7 @@ function test_includeOnce ()
     # Check fake path
     TEST=$(includeOnce "${TEST_FILE_FAKE_PATH}")
     echo -n "-$?"
-    [[ "$TEST" == "$BP_FILE_NOT_EXISTS" ]] && echo -n 1
+    [[ -z "$TEST" ]] && echo -n 1
 }
 
 
@@ -222,6 +251,7 @@ function test_userHome ()
 
 
 # Launch all functional tests
+bashUnit "import" "${TEST_IMPORT}" "$(test_import)"
 bashUnit "include" "${TEST_INCLUDE}" "$(test_include)"
 bashUnit "includeOnce" "${TEST_INCLUDE_ONCE}" "$(test_includeOnce)"
 bashUnit "physicalDirname" "${TEST_PHYSICAL_DIRNAME}" "$(test_physicalDirname)"
