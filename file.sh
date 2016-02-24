@@ -4,6 +4,7 @@ declare BP_USER_HOME
 declare -A -i BP_INCLUDE_FILE
 declare -r BP_USER_NAME="$(logname)"
 
+
 ##
 # The include statement includes and evaluates the specified file.
 # @param string $1 File
@@ -42,6 +43,26 @@ function includeOnce ()
     if [[ $? -ne 0 ]]; then
         return 1
     fi
+}
+
+##
+# The import statement includes once and evaluates all files specified in arguments
+# @param string $@ Paths
+# @returnStatus 1 If there is no file path in entry
+# @returnStatus 1 If one of the file path can not be evaluated
+function import ()
+{
+    if [[ $# -eq 0 ]]; then
+        return 1
+    fi
+
+    local FILE_PATH
+    for FILE_PATH in "$@"; do
+        includeOnce "${FILE_PATH}"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+    done
 }
 
 ##

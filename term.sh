@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+declare -r BP_TERM_ERROR="An error occured"
+
 ##
 # @example Are you sure ? [Y/N]
 # @codeCoverageIgnore
@@ -51,6 +53,73 @@ function dialog ()
         fi
         ((COUNTER++))
     done
+}
+
+##
+# Print a progress bar
+#
+# @example
+#    Upload  [++++++++++++++++----] 70%
+#
+# @param string $1 Name
+# @param int $2 Step
+# @param int $3 Max
+# @param string $4 Error, default "An error occured". Printed if the max value is lower or equals to 0
+# @param int $5 With, default 20
+# @param string $6 CharEmpty, default -
+# @param string $7 CharFilled, default +
+# @return string
+# @returnStatus 1 If first parameter named jobName is empty
+# @returnStatus 1 If third parameter named Max is negative (an error occured)
+function progressBar ()
+{
+    local NAME="$1"
+    if [[ -z "${NAME}" ]]; then
+        return 1
+    fi
+    declare -i STEP="$2"
+    declare -i MAX="$3"
+    local ERROR="$4"
+    if [[ -z "${ERROR}" ]]; then
+        ERROR="${BP_TERM_ERROR}"
+    fi
+    if [[ ${MAX} -le 0 ]]; then
+        echo -e "${ERROR}"
+        return 1
+    fi
+    declare -i WIDTH="$5"
+    if [[ ${WIDTH} -eq 0 ]]; then
+        WIDTH=20
+    fi
+    local CHAR_EMPTY="$6"
+    if [[ -z "${CHAR_EMPTY}" ]]; then
+        CHAR_EMPTY="-"
+    fi
+    local CHAR_FILLED="$7"
+    if [[ -z "${CHAR_FILLED}" ]]; then
+        CHAR_FILLED="+"
+    fi
+
+    declare -i PERCENT=0
+    declare -i PROGRESS=0
+    if [[ ${STEP} -gt 0 ]]; then
+        PERCENT=$((100*${STEP}/${MAX}))
+        PROGRESS=$((${WIDTH}*${STEP}/${MAX}))
+        if [[ ${PROGRESS} -gt ${WIDTH} ]]; then
+            PROGRESS=${WIDTH}
+        fi
+    fi
+    declare -i EMPTY=$((${PROGRESS}-${WIDTH}))
+
+    # Output to screen
+    local STR_FILLED=$(printf "%${PROGRESS}s" | tr " " "${CHAR_FILLED}")
+    local STR_EMPTY=$(printf "%${EMPTY}s" | tr " " "${CHAR_EMPTY}")
+    printf "\r%s [%s%s] %d%% " "${NAME}" "${STR_FILLED}" "${STR_EMPTY}" "${PERCENT}"
+
+    # Job done
+    if [[ ${STEP} -ge ${MAX} ]]; then
+        echo
+    fi
 }
 
 ##
