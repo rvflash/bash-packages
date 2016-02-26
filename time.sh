@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package time
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 declare -r BP_OS="$(uname -s)"
 declare -r BP_UTC_DATE_FORMAT="%Y-%m-%dT%H:%M:%S%z"
 

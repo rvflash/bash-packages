@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package math
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 # Use BC by default to manipulate string. If BC is not available, used pure bash
 declare -r -i BP_BC="$(if [[ -z "$(type -p bc)" ]]; then echo 0; else echo 1; fi)"
 declare -r BP_INT_TYPE="integer"

@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
 ##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package string
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
+##
 # Calculate and return a checksum for one string
 # @param string $1 Str
 # @return string

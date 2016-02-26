@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package testing
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 declare -r BP_UNIT_PACKAGE_NAME="Package"
 declare -r BP_UNIT_TEST_FILE_SUFFIX="Test.sh"
 

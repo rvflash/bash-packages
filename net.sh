@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
 ##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package net
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
+##
 # Parse a URL and return its components
 # @example http://login:password@example.com/dir/file.ext?a=sth&b=std
 #     (SCHEME:"http" USER:"login" PASS:"password" HOST:"example.com" PORT:80 PATH:"/dir/file.ext" QUERY:"a=sth&b=std")
