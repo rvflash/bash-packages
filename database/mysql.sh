@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package database/mysql
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 # Require mysql command line tool
 declare -r -i BP_MYSQL="$(if [[ -z "$(type -p mysql)" ]]; then echo 0; else echo 1; fi)"
 declare -r -i BP_MYSQL_WRK=${RANDOM}

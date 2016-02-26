@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package array
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 declare -r BP_ARRAY_DECLARED_INDEXED_TYPE="+a"
 declare -r BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE="+A"
 declare -r BP_ARRAY_DEFAULT_INDEXED_TYPE="-a"

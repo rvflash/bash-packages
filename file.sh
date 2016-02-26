@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+##
+# bash-packages
+#
+# Part of bash-packages project.
+#
+# @package file
+# @copyright 2016 Hervé Gouchet
+# @license http://www.apache.org/licenses/LICENSE-2.0
+# @source https://github.com/rvflash/bash-packages
+
 declare BP_USER_HOME
 declare -A -i BP_INCLUDE_FILE
 declare -r BP_USER_NAME="$(logname)"
