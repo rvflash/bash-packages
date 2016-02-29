@@ -55,6 +55,47 @@
 * Function userHome ( ) string `?>0 In case of error`
 
 
+## Package log
+
+By default, log will not be prefixed by the date and time or level. You can override it by using appropriate methods.
+You can also add your own prefix by using the method named `logUsePrefix`.
+
+* Function logIsMuted ( ) void `?=0 if log methods are disabled, 1 otherwise`
+* Function logMute ( int enable ) void `?=0`
+* Function logPrefix ( ) string `?=0`
+* Function logUsePrefix ( string prefix ) void `?=0`
+* Function logUseDateTime ( int enable ) void `?=0`
+* Function logUseLevel ( int enable ) void `?=0`
+* Function logWithDateTime ( ) void `?=0 if each log are prefixed by datetime, 1 otherwise`
+* Function logWithLevel ( ) void `?=0 if each log are prefixed by level, 1 otherwise`
+
+## Package log/print
+
+> Print on default output
+
+* Function pInfo ( string str ) string `?=0`
+* Function pInfoF ( string formatstr [, ...string args ] ) string `?>0 If the print datas does not match with the formatstring`
+* Function pWarn ( string str ) string `?=0`
+* Function pWarnF ( string formatstr [, ...string args ] ) string `?>0 If the print datas does not match with the formatstring`
+* Function pError ( string str ) string `?=0`
+* Function pErrorF ( string formatstr [, ...string args ] ) string `?>0 If the print datas does not match with the formatstring`
+* Function pFatal ( string str ) string `#=1`
+* Function pFatalF ( string formatstr [, ...string args ] ) string `#=1`
+
+## Package log/file
+
+> Write into a file
+
+* Function wInfo ( string filepath, string str ) void `?>0 In case of error for writing into file`
+* Function wInfoF ( string filepath, string formatstr [ , ...string args ] ) void `?>0 In case of error for writing into file`
+* Function wWarn ( string filepath, string str ) void `?>0 In case of error for writing into file`
+* Function wWarnF ( string filepath, string formatstr [ , ...string args ] ) void `?>0 In case of error for writing into file`
+* Function wError ( string filepath, string str ) void `?>0 In case of error for writing into file`
+* Function wErrorF ( string filepath, string formatstr [ , ...string args ] ) void `?>0 In case of error for writing into file`
+* Function wFatal ( string filepath, string str ) void `#>0 In case of error for writing into file`
+* Function wFatalF ( string filepath, string formatstr [ , ...string args ] ) void `?>0 In case of error for writing into file`
+
+
 ## Package math
 
 > The bc command is not mandatory for this package, but used if exists
