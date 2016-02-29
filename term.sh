@@ -16,18 +16,19 @@ declare -r BP_TERM_ERROR="An error occured"
 # @example Are you sure ? [Y/N]
 # @codeCoverageIgnore
 # @param string $1 Message
-# @param string $2 Default message to add after confirm request [optional]
+# @param string $2 Extended message to add after confirm request [optional]
 # @returnStatus 0 I answer is YES
 # @returnStatus 1 I answer is NO
 function confirm ()
 {
-    local DEFAULT_MESSAGE="$2"
+    local msg="$1"
+    local extendedMsg="$2"
 
-    local CONFIRM
-    while read -e -p "$1 ${DEFAULT_MESSAGE}? " CONFIRM; do
-        if [[ "$CONFIRM" == [Yy] || "$CONFIRM" == [Yy][Ee][Ss] ]]; then
+    local str
+    while read -e -p "${msg} ${extendedMsg}? " str; do
+        if [[ "$str" == [Yy] || "$str" == [Yy][Ee][Ss] ]]; then
             return 0
-        elif [[ "$CONFIRM" == [Nn] || "$CONFIRM" == [Nn][Oo] ]]; then
+        elif [[ "$str" == [Nn] || "$str" == [Nn][Oo] ]]; then
             return 1
         fi
     done
@@ -42,26 +43,26 @@ function confirm ()
 # return string
 function dialog ()
 {
-    local MESSAGE="$1"
-    local MANDATORY="$2"
-    if [[ -z "$MANDATORY" || "$MANDATORY" -ne 0 ]]; then
-        MANDATORY=1
+    local msg="$1"
+    declare -i mandatory="$2"
+    if [[ ${mandatory} -ne 0 ]]; then
+        mandatory=1
     fi
-    local MANDATORY_MESSAGE="$3"
+    local mandatoryMsg="$3"
 
-    local COUNTER=0
-    local MANDATORY_FIELD
-    local RESPONSE
-    while [[ "$MANDATORY" -ne -1 ]]; do
-        if [[ "$MANDATORY" -eq 1 && "$COUNTER" -gt 0 && -n "$MANDATORY_MESSAGE" ]]; then
-            MANDATORY_FIELD=" ${MANDATORY_MESSAGE}"
+    declare -i count=0
+    local mandatoryField
+    local str
+    while [[ "$mandatory" -ne -1 ]]; do
+        if [[ ${mandatory} -eq 1 && ${count} -gt 0 && -n "$mandatoryMsg" ]]; then
+            mandatoryField=" $mandatoryMsg"
         fi
-        read -e -p "${MESSAGE}${MANDATORY_FIELD}: " RESPONSE
-        if [[ -n "$RESPONSE" ]] || [[ "$MANDATORY" -eq 0 ]]; then
-            echo "$RESPONSE"
-            MANDATORY=-1
+        read -e -p "${msg}${mandatoryField}: " str
+        if [[ -n "$str" || "$mandatory" -eq 0 ]]; then
+            echo "$str"
+            mandatory=-1
         fi
-        ((COUNTER++))
+        ((count++))
     done
 }
 
@@ -83,51 +84,51 @@ function dialog ()
 # @returnStatus 1 If third parameter named Max is negative (an error occured)
 function progressBar ()
 {
-    local NAME="$1"
-    if [[ -z "${NAME}" ]]; then
+    local name="$1"
+    if [[ -z "$name" ]]; then
         return 1
     fi
-    declare -i STEP="$2"
-    declare -i MAX="$3"
-    local ERROR="$4"
-    if [[ -z "${ERROR}" ]]; then
-        ERROR="${BP_TERM_ERROR}"
+    declare -i step="$2"
+    declare -i max="$3"
+    local error="$4"
+    if [[ -z "$error" ]]; then
+        error="${BP_TERM_ERROR}"
     fi
-    if [[ ${MAX} -le 0 ]]; then
-        echo -e "${ERROR}"
+    if [[ ${max} -le 0 ]]; then
+        echo -e "$error"
         return 1
     fi
-    declare -i WIDTH="$5"
-    if [[ ${WIDTH} -eq 0 ]]; then
-        WIDTH=20
+    declare -i width="$5"
+    if [[ ${width} -eq 0 ]]; then
+        width=20
     fi
-    local CHAR_EMPTY="$6"
-    if [[ -z "${CHAR_EMPTY}" ]]; then
-        CHAR_EMPTY="-"
+    local charEmpty="$6"
+    if [[ -z "$charEmpty" ]]; then
+        charEmpty="-"
     fi
-    local CHAR_FILLED="$7"
-    if [[ -z "${CHAR_FILLED}" ]]; then
-        CHAR_FILLED="+"
+    local charFilled="$7"
+    if [[ -z "$charFilled" ]]; then
+        charFilled="+"
     fi
 
-    declare -i PERCENT=0
-    declare -i PROGRESS=0
-    if [[ ${STEP} -gt 0 ]]; then
-        PERCENT=$((100*${STEP}/${MAX}))
-        PROGRESS=$((${WIDTH}*${STEP}/${MAX}))
-        if [[ ${PROGRESS} -gt ${WIDTH} ]]; then
-            PROGRESS=${WIDTH}
+    declare -i percent=0
+    declare -i progress=0
+    if [[ ${step} -gt 0 ]]; then
+        percent=$((100*${step}/${max}))
+        progress=$((${width}*${step}/${max}))
+        if [[ ${progress} -gt ${width} ]]; then
+            progress=${width}
         fi
     fi
-    declare -i EMPTY=$((${PROGRESS}-${WIDTH}))
+    declare -i empty=$((${progress}-${width}))
 
     # Output to screen
-    local STR_FILLED=$(printf "%${PROGRESS}s" | tr " " "${CHAR_FILLED}")
-    local STR_EMPTY=$(printf "%${EMPTY}s" | tr " " "${CHAR_EMPTY}")
-    printf "\r%s [%s%s] %d%% " "${NAME}" "${STR_FILLED}" "${STR_EMPTY}" "${PERCENT}"
+    local strFilled=$(printf "%${progress}s" | tr " " "$charFilled")
+    local strEmpty=$(printf "%${empty}s" | tr " " "$charEmpty")
+    printf "\r%s [%s%s] %d%% " "$name" "$strFilled" "$strEmpty" "$percent"
 
     # Job done
-    if [[ ${STEP} -ge ${MAX} ]]; then
+    if [[ ${step} -ge ${max} ]]; then
         echo
     fi
 }
@@ -142,16 +143,16 @@ function progressBar ()
 # @return int or arrayToString
 function windowSize ()
 {
-    local TYPE="$1"
-    local SIZE
-    SIZE=$(stty size 2>/dev/null)
+    local type="$1"
+    local size
+    size=$(stty size 2>/dev/null)
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    case "$TYPE" in
-        "width" ) echo -n "${SIZE##* }" ;;
-        "height") echo -n "${SIZE%% *}" ;;
-        *       ) echo -n "(${SIZE})" ;;
+    case "$type" in
+        "width" ) echo -n "${size##* }" ;;
+        "height") echo -n "${size%% *}" ;;
+        *       ) echo -n "(${size})" ;;
     esac
 }

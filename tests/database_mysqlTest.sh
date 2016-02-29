@@ -29,26 +29,26 @@ readonly TEST_DATABASE_MYSQL_AFFECTED_ROWS="-01-01-001"
 
 function test_mysqlAffectedRows ()
 {
-    local TEST DB_TEST QUERY_TEST
+    local test DB_TEST QUERY_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no link to database
-    TEST=$(mysqlAffectedRows)
+    test=$(mysqlAffectedRows)
     echo -n "-$?"
-    [[ "$TEST" -eq -1 ]] && echo -n 1
+    [[ "$test" -eq -1 ]] && echo -n 1
 
     # Check with fake link to database
-    TEST=$(mysqlAffectedRows "123")
+    test=$(mysqlAffectedRows "123")
     echo -n "-$?"
-    [[ "$TEST" -eq -1 ]] && echo -n 1
+    [[ "$test" -eq -1 ]] && echo -n 1
 
     # Check with valid link to database without affected rows
     QUERY_TEST=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_INSERT}")
     echo -n "-$?"
-    TEST=$(mysqlAffectedRows "${DB_TEST}")
+    test=$(mysqlAffectedRows "${DB_TEST}")
     echo -n "$?"
-    [[ "$TEST" -eq 2 ]] && echo -n 1
+    [[ "$test" -eq 2 ]] && echo -n 1
 }
 
 
@@ -56,26 +56,26 @@ readonly TEST_DATABASE_MYSQL_MYSQL_CLOSE="-11-11-1011"
 
 function test_mysqlClose ()
 {
-    local TEST DB_TEST DB_TEST_FILE
+    local test DB_TEST DB_TEST_FILE
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
     DB_TEST_FILE="${BP_MYSQL_WRK_DIR}/${DB_TEST}${BP_MYSQL_CONNECT_EXT}"
 
     # Check nothing
-    TEST=$(mysqlClose)
+    test=$(mysqlClose)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check With invalid link
-    TEST=$(mysqlClose "123")
+    test=$(mysqlClose "123")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check With valid link
     [[ -f "${DB_TEST_FILE}" ]] && echo -n "-1"
-    TEST=$(mysqlClose "${DB_TEST}")
+    test=$(mysqlClose "${DB_TEST}")
     echo -n "$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
     [[ ! -f "${DB_TEST_FILE}" ]] && echo -n "1"
 }
 
@@ -84,27 +84,27 @@ readonly TEST_DATABASE_MYSQL_MYSQL_CONNECT="-11-11-01-11"
 
 function test_mysqlConnect ()
 {
-    local TEST
+    local test
 
     # Check nothing
-    TEST=$(mysqlConnect)
+    test=$(mysqlConnect)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check without all required parameters
-    TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}")
+    test=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with valid parameters
-    TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+    test=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
     echo -n "-$?"
-    [[ "$TEST" -gt 0 ]] && echo -n 1
+    [[ "$test" -gt 0 ]] && echo -n 1
 
     # Check with invalid parameters
-    TEST=$(mysqlConnect "bad" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+    test=$(mysqlConnect "bad" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 }
 
 
@@ -112,27 +112,27 @@ readonly TEST_DATABASE_MYSQL_MYSQL_ESCAPE_STRING="-01-01-01-01"
 
 function test_mysqlEscapeString ()
 {
-    local TEST
+    local test
 
     # Check nothing
-    TEST=$(mysqlEscapeString)
+    test=$(mysqlEscapeString)
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check with single quote
-    TEST=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_SQUOTED}")
+    test=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_SQUOTED}")
     echo -n "-$?"
-    [[ "${TEST}" == "${TEST_DATABASE_MYSQL_STR_PSQUOTED}" ]] && echo -n 1
+    [[ "${test}" == "${TEST_DATABASE_MYSQL_STR_PSQUOTED}" ]] && echo -n 1
 
     # Check with double quote
-    TEST=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_DQUOTED}")
+    test=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_DQUOTED}")
     echo -n "-$?"
-    [[ "${TEST}" == "${TEST_DATABASE_MYSQL_STR_PDQUOTED}" ]] && echo -n 1
+    [[ "${test}" == "${TEST_DATABASE_MYSQL_STR_PDQUOTED}" ]] && echo -n 1
 
     # Check with double quote, backslash and newline
-    TEST=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_NEWLINE}")
+    test=$(mysqlEscapeString "${TEST_DATABASE_MYSQL_STR_NEWLINE}")
     echo -n "-$?"
-    [[ "${TEST}" == "${TEST_DATABASE_MYSQL_STR_PNEWLINE}" ]] && echo -n 1
+    [[ "${test}" == "${TEST_DATABASE_MYSQL_STR_PNEWLINE}" ]] && echo -n 1
 }
 
 
@@ -140,30 +140,30 @@ readonly TEST_DATABASE_MYSQL_MYSQL_LAST_ERROR="-01-01-01-01"
 
 function test_mysqlLastError ()
 {
-    local TEST DB_TEST QUERY_TEST
+    local test DB_TEST QUERY_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no link to database
-    TEST=$(mysqlLastError)
+    test=$(mysqlLastError)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with fake link to database
-    TEST=$(mysqlLastError "123")
+    test=$(mysqlLastError "123")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with valid link to database without error
-    TEST=$(mysqlLastError "${DB_TEST}")
+    test=$(mysqlLastError "${DB_TEST}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with valid link to database without error
     QUERY_TEST=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
-    TEST=$(mysqlLastError "${DB_TEST}")
+    test=$(mysqlLastError "${DB_TEST}")
     echo -n "-$?"
-    [[ -n "$TEST" ]] && echo -n 1
+    [[ -n "$test" ]] && echo -n 1
 }
 
 
@@ -171,29 +171,29 @@ readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC="-11-11-11-0111111111"
 
 function test_mysqlFetchAssoc ()
 {
-    local TEST DB_TEST LINE_TEST
+    local test DB_TEST LINE_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no database link
-    TEST=$(mysqlFetchAssoc)
+    test=$(mysqlFetchAssoc)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link but no query
-    TEST=$(mysqlFetchAssoc "${DB_TEST}")
+    test=$(mysqlFetchAssoc "${DB_TEST}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and fake query
-    TEST=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    test=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and query
-    TEST=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
+    test=$(mysqlFetchAssoc "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
     echo -n "-$?"
-    if [[ -n "$TEST" ]]; then
+    if [[ -n "$test" ]]; then
         echo -n "1"
         while read -r LINE_TEST; do
             declare -A ARRAY_TEST="$LINE_TEST"
@@ -202,7 +202,7 @@ function test_mysqlFetchAssoc ()
             [[ "${ARRAY_TEST[name]}" == "Thi\"rd\"" ]] && echo -n 1
             [[ "${ARRAY_TEST[name]}" == "Quarter" ]] && echo -n 1
             [[ "${#ARRAY_TEST[@]}" -eq 2 && "${ARRAY_TEST[id]}" -gt 0 ]] && echo -n 1
-        done <<<"$TEST"
+        done <<<"$test"
     fi
 }
 
@@ -211,29 +211,29 @@ readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY="-11-11-11-0111111111"
 
 function test_mysqlFetchArray ()
 {
-    local TEST DB_TEST LINE_TEST
+    local test DB_TEST LINE_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no database link
-    TEST=$(mysqlFetchArray)
+    test=$(mysqlFetchArray)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link but no query
-    TEST=$(mysqlFetchArray "${DB_TEST}")
+    test=$(mysqlFetchArray "${DB_TEST}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and fake query
-    TEST=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    test=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and query
-    TEST=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
+    test=$(mysqlFetchArray "${DB_TEST}" "${TEST_DATABASE_MYSQL_EXOTIC_SELECT}")
     echo -n "-$?"
-    if [[ -n "$TEST" ]]; then
+    if [[ -n "$test" ]]; then
         echo -n "1"
         while read -r LINE_TEST; do
             declare -a ARRAY_TEST="$LINE_TEST"
@@ -242,7 +242,7 @@ function test_mysqlFetchArray ()
             [[ "${ARRAY_TEST[1]}" == "Thi\"rd\"" ]] && echo -n 1
             [[ "${ARRAY_TEST[1]}" == "Quarter" ]] && echo -n 1
             [[ "${#ARRAY_TEST[@]}" -eq 2 ]] && echo -n 1
-        done <<<"$TEST"
+        done <<<"$test"
     fi
 }
 
@@ -251,29 +251,29 @@ readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW="-11-11-11-01"
 
 function test_mysqlFetchRaw ()
 {
-    local TEST DB_TEST
+    local test DB_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no database link
-    TEST=$(mysqlFetchRaw)
+    test=$(mysqlFetchRaw)
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link but no query
-    TEST=$(mysqlFetchRaw "${DB_TEST}")
+    test=$(mysqlFetchRaw "${DB_TEST}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and fake query
-    TEST=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    test=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
     echo -n "-$?"
-    [[ -z "$TEST" ]] && echo -n 1
+    [[ -z "$test" ]] && echo -n 1
 
     # Check with database link and query
-    TEST=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
+    test=$(mysqlFetchRaw "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
     echo -n "-$?"
-    [[ "$TEST" == "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW_VALUE}" ]] && echo -n 1
+    [[ "$test" == "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW_VALUE}" ]] && echo -n 1
 }
 
 
@@ -281,22 +281,22 @@ readonly TEST_DATABASE_MYSQL_MYSQL_FETCH_ALL="-01-01-01"
 
 function test_mysqlFetchAll ()
 {
-    local TEST
+    local test
 
     # Check mysqlFetchAssoc only
-    TEST=$(test_mysqlFetchAssoc)
+    test=$(test_mysqlFetchAssoc)
     echo -n "-$?"
-    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC}" ]] && echo -n 1
+    [[ "$test" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC}" ]] && echo -n 1
 
     # Check mysqlFetchArray only
-    TEST=$(test_mysqlFetchArray)
+    test=$(test_mysqlFetchArray)
     echo -n "-$?"
-    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY}" ]] && echo -n 1
+    [[ "$test" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ARRAY}" ]] && echo -n 1
 
     # Check mysqlFetchRaw only
-    TEST=$(test_mysqlFetchRaw)
+    test=$(test_mysqlFetchRaw)
     echo -n "-$?"
-    [[ "$TEST" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW}" ]] && echo -n 1
+    [[ "$test" == "${TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW}" ]] && echo -n 1
 }
 
 
@@ -304,26 +304,26 @@ readonly TEST_DATABASE_MYSQL_MYSQL_NUM_ROWS="-01-01-001"
 
 function test_mysqlNumRows ()
 {
-    local TEST DB_TEST QUERY_TEST
+    local test DB_TEST QUERY_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check with no result link
-    TEST=$(mysqlNumRows)
+    test=$(mysqlNumRows)
     echo -n "-$?"
-    [[ "$TEST" -eq -1 ]] && echo -n 1
+    [[ "$test" -eq -1 ]] && echo -n 1
 
     # Check with fake link to database
-    TEST=$(mysqlNumRows "123")
+    test=$(mysqlNumRows "123")
     echo -n "-$?"
-    [[ "$TEST" -eq -1 ]] && echo -n 1
+    [[ "$test" -eq -1 ]] && echo -n 1
 
     # Check with valid link to database without error
     QUERY_TEST=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ROWS}")
     echo -n "-$?"
-    TEST=$(mysqlNumRows "${QUERY_TEST}")
+    test=$(mysqlNumRows "${QUERY_TEST}")
     echo -n "$?"
-    [[ "$TEST" -eq ${TEST_DATABASE_MYSQL_SELECT_SIZE} ]] && echo -n 1
+    [[ "$test" -eq ${TEST_DATABASE_MYSQL_SELECT_SIZE} ]] && echo -n 1
 }
 
 
@@ -331,29 +331,29 @@ readonly TEST_DATABASE_MYSQL_MYSQL_OPTION="-11-11-11-01"
 
 function test_mysqlOption ()
 {
-    local TEST DB_TEST
+    local test DB_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check nothing
-    TEST=$(mysqlOption)
+    test=$(mysqlOption)
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check with invalid database link
-    TEST=$(mysqlOption "123")
+    test=$(mysqlOption "123")
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check with valid database link but not all required parameters
-    TEST=$(mysqlOption "${DB_TEST}")
+    test=$(mysqlOption "${DB_TEST}")
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check with all required paramaters
-    TEST=$(mysqlOption "${DB_TEST}" "${BP_MYSQL_TO}" "${TEST_DATABASE_MYSQL_TO}")
+    test=$(mysqlOption "${DB_TEST}" "${BP_MYSQL_TO}" "${TEST_DATABASE_MYSQL_TO}")
     echo -n "-$?"
-    [[ -z "${TEST}" && -n "${DB_TEST}" &&  $(sed -n "$((${BP_MYSQL_TO}+1))p" "${BP_MYSQL_WRK_DIR}/${DB_TEST}${BP_MYSQL_CONNECT_EXT}") -eq ${TEST_DATABASE_MYSQL_TO} ]] && echo -n 1
+    [[ -z "${test}" && -n "${DB_TEST}" &&  $(sed -n "$((${BP_MYSQL_TO}+1))p" "${BP_MYSQL_WRK_DIR}/${DB_TEST}${BP_MYSQL_CONNECT_EXT}") -eq ${TEST_DATABASE_MYSQL_TO} ]] && echo -n 1
 }
 
 
@@ -361,29 +361,29 @@ readonly TEST_DATABASE_MYSQL_MYSQL_QUERY="-11-11-11-01"
 
 function test_mysqlQuery ()
 {
-    local TEST DB_TEST
+    local test DB_TEST
 
     DB_TEST=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
 
     # Check nothing
-    TEST=$(mysqlQuery)
+    test=$(mysqlQuery)
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check With invalid database link
-    TEST=$(mysqlQuery "123" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
+    test=$(mysqlQuery "123" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check select data on unexisting table
-    TEST=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    test=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
     echo -n "-$?"
-    [[ -z "${TEST}" ]] && echo -n 1
+    [[ -z "${test}" ]] && echo -n 1
 
     # Check select one row on valid database
-    TEST=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
+    test=$(mysqlQuery "${DB_TEST}" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
     echo -n "-$?"
-    [[ "${TEST}" -gt 0 ]] && echo -n 1
+    [[ "${test}" -gt 0 ]] && echo -n 1
 }
 
 

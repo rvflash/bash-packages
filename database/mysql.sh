@@ -52,10 +52,10 @@ declare -r BP_MYSQL_AFFECTING_METHOD=202
 # @returnStatus 1 If query method is not INSERT, UPDATE, REPLACE or DELETE
 function __mysql_is_affecting_method ()
 {
-    local MYSQL_QUERY="$1"
+    local query="$1"
 
-    if [[ "${MYSQL_QUERY}" == ${BP_MYSQL_INSERT}* || "${MYSQL_QUERY}" == ${BP_MYSQL_UPDATE}* || \
-          "${MYSQL_QUERY}" == ${BP_MYSQL_REPLACE}* || "${MYSQL_QUERY}" == ${BP_MYSQL_DELETE}* \
+    if [[ "$query" == ${BP_MYSQL_INSERT}* || "$query" == ${BP_MYSQL_UPDATE}* || \
+          "$query" == ${BP_MYSQL_REPLACE}* || "$query" == ${BP_MYSQL_DELETE}* \
     ]]; then
         return 0
     fi
@@ -68,10 +68,10 @@ function __mysql_is_affecting_method ()
 # @returnStatus 1 If query method is not SELECT, SHOW, DESCRIBE or EXPLAIN
 function __mysql_is_selecting_method ()
 {
-    local MYSQL_QUERY="$1"
+    local query="$1"
 
-    if [[ "${MYSQL_QUERY}" == ${BP_MYSQL_SELECT}* || "${MYSQL_QUERY}" == ${BP_MYSQL_SHOW}* || \
-          "${MYSQL_QUERY}" == ${BP_MYSQL_DESC}* || "${MYSQL_QUERY}" == ${BP_MYSQL_EXPLAIN}* \
+    if [[ "$query" == ${BP_MYSQL_SELECT}* || "$query" == ${BP_MYSQL_SHOW}* || \
+          "$query" == ${BP_MYSQL_DESC}* || "$query" == ${BP_MYSQL_EXPLAIN}* \
     ]]; then
         return 0
     fi
@@ -87,17 +87,17 @@ function __mysql_is_selecting_method ()
 # @returnStatus 1 If checksum is empty or cksum methods returns in error
 function __mysql_checksum ()
 {
-    local MYSQL_CHECKSUM="$1"
-    if [[ -z "${MYSQL_CHECKSUM}" ]]; then
+    local checksum="$1"
+    if [[ -z "$checksum" ]]; then
         return 1
     fi
 
-    MYSQL_CHECKSUM="$(cksum <<<"${MYSQL_CHECKSUM}" | awk '{print $1}')"
-    if [[ $? -ne 0 || -z "${MYSQL_CHECKSUM}" ]]; then
+    checksum="$(cksum <<<"$checksum" | awk '{print $1}')"
+    if [[ $? -ne 0 || -z "$checksum" ]]; then
         return 1
     fi
 
-    echo -n "${MYSQL_CHECKSUM}"
+    echo -n "$checksum"
 }
 
 ##
@@ -109,27 +109,27 @@ function __mysql_checksum ()
 # @return string
 function __mysql_options ()
 {
-    local MYSQL_HOST="$1"
-    local MYSQL_USER="$2"
-    local MYSQL_PASS="$3"
-    declare -i MYSQL_TO="$4"
+    local host="$1"
+    local user="$2"
+    local pass="$3"
+    declare -i timeOut="$4"
 
-    local MYSQL_OPTIONS=""
-    if [[ -n "${MYSQL_HOST}" ]]; then
-        MYSQL_OPTIONS+=" --host=${MYSQL_HOST}"
+    local options=""
+    if [[ -n "$host" ]]; then
+        options+=" --host=${host}"
     fi
-    if [[ -n "${MYSQL_USER}" ]]; then
-        MYSQL_OPTIONS+=" --user=${MYSQL_USER}"
+    if [[ -n "$user" ]]; then
+        options+=" --user=${user}"
     fi
-    if [[ -n "${MYSQL_PASS}" ]]; then
-        MYSQL_OPTIONS+=" --password=${MYSQL_PASS}"
+    if [[ -n "$pass" ]]; then
+        options+=" --password=${pass}"
     fi
-    if [[ "${MYSQL_TO}" -gt 0 ]]; then
-        # The number of seconds before connection timeout. (Default value is 0.)
-        MYSQL_OPTIONS+=" --connect_timeout=${MYSQL_TO}"
+    if [[ "$timeOut" -gt 0 ]]; then
+        # The number of seconds before connection timeOut. (Default value is 0.)
+        options+=" --connect_timeout=${timeOut}"
     fi
 
-    echo -n "${MYSQL_OPTIONS}"
+    echo -n "$options"
 }
 
 ##
@@ -143,68 +143,68 @@ function __mysql_options ()
 # @returnStatus 1 If query failed
 function __mysql_query ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ ${BP_MYSQL} -eq 0 || "${MYSQL_CHECKSUM}" -eq 0 || ! -f "${MYSQL_CONNECT_FILE}" ]]; then
+    declare -a link
+    declare -i checksum="$1"
+    local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ ${BP_MYSQL} -eq 0 || "$checksum" -eq 0 || ! -f "$connectFile" ]]; then
         return 1
     else
-        declare -a MYSQL_LINK
-        mapfile -t MYSQL_LINK < "${MYSQL_CONNECT_FILE}"
+        mapfile -t link < "$connectFile"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
     fi
-    local MYSQL_QUERY="$2"
-    if [[ -z "${MYSQL_QUERY}" ]]; then
+    local query="$2"
+    if [[ -z "$query" ]]; then
         return 1
     fi
 
-    local MYSQL_OPTIONS="$3"
-    MYSQL_OPTIONS+=" $(__mysql_options "${MYSQL_LINK[${BP_MYSQL_HOST}]}" "${MYSQL_LINK[${BP_MYSQL_USER}]}" "${MYSQL_LINK[${BP_MYSQL_PASS}]}" "${MYSQL_LINK[${BP_MYSQL_TO}]}")"
+    local options="$3"
+    options+=" $(__mysql_options "${link[${BP_MYSQL_HOST}]}" "${link[${BP_MYSQL_USER}]}" "${link[${BP_MYSQL_PASS}]}" "${link[${BP_MYSQL_TO}]}")"
 
-    declare -i MYSQL_QUERY_CHECKSUM="${MYSQL_CHECKSUM}"
-    MYSQL_QUERY_CHECKSUM+=$(__mysql_checksum "${MYSQL_CHECKSUM}${BP_MYSQL_CHK_SEP}${MYSQL_QUERY}")
-    if [[ $? -ne 0 || "${MYSQL_QUERY_CHECKSUM}" -eq 0 ]]; then
+    declare -i queryChecksum="$checksum"
+    queryChecksum+=$(__mysql_checksum "${checksum}${BP_MYSQL_CHK_SEP}${query}")
+    if [[ $? -ne 0 || "$queryChecksum" -eq 0 ]]; then
         return 1
     fi
-    local MYSQL_AFFECTED_ROW_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_AFFECTED_ROW_EXT}"
-    local MYSQL_QUERY_RESULT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-    if [[ -f "${MYSQL_QUERY_RESULT_FILE}" && "${MYSQL_LINK[${BP_MYSQL_CACHED}]}" -eq 1 ]]; then
+    local affectedRowFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_AFFECTED_ROW_EXT}"
+    local queryResultFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_RESULT_EXT}"
+    if [[ -f "$queryResultFile" && "${link[${BP_MYSQL_CACHED}]}" -eq 1 ]]; then
         # Query already in cache
-        echo -n "${MYSQL_QUERY_CHECKSUM}"
+        echo -n "$queryChecksum"
         return 0
     fi
 
-    local MYSQL_METHOD
-    if __mysql_is_affecting_method "${MYSQL_QUERY}"; then
-        MYSQL_METHOD=${BP_MYSQL_AFFECTING_METHOD}
+    local method
+    if __mysql_is_affecting_method "$query"; then
+        method=${BP_MYSQL_AFFECTING_METHOD}
         # Add ROW_COUNT query to known the number of affected rows
-        MYSQL_QUERY+="${BP_MYSQL_AFFECTED_ROW_COUNT}"
-    elif __mysql_is_selecting_method "${MYSQL_QUERY}"; then
-        MYSQL_METHOD=${BP_MYSQL_SELECTING_METHOD}
+        query+="${BP_MYSQL_AFFECTED_ROW_COUNT}"
+    elif __mysql_is_selecting_method "$query"; then
+        method=${BP_MYSQL_SELECTING_METHOD}
     else
-        MYSQL_METHOD=${BP_MYSQL_UNKNOWN_METHOD}
+        method=${BP_MYSQL_UNKNOWN_METHOD}
     fi
 
-    local MYSQL_RESULT
-    MYSQL_RESULT=$(mysql ${MYSQL_OPTIONS} ${MYSQL_LINK["${BP_MYSQL_DB}"]} -e "${MYSQL_QUERY}" 2>&1)
+    local result
+    result=$(mysql $options ${link["${BP_MYSQL_DB}"]} -e "$query" 2>&1)
     if [[ $? -ne 0 ]]; then
         # An error occured
-        echo "${MYSQL_RESULT}" > "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
+        echo "$result" > "${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
         return 1
-    elif [[ ${MYSQL_METHOD} -eq ${BP_MYSQL_AFFECTING_METHOD} ]]; then
+    elif [[ $method -eq ${BP_MYSQL_AFFECTING_METHOD} ]]; then
         # Extract result of the last query to get affected row count
-        echo "${MYSQL_RESULT}" | tail -n 1 > "${MYSQL_AFFECTED_ROW_FILE}"
-    elif [[ ${MYSQL_METHOD} -eq ${BP_MYSQL_SELECTING_METHOD} ]]; then
-        if [[ "${MYSQL_OPTIONS}" == *"${BP_MYSQL_COLUMN_NAMES_OPTS}"* ]]; then
-            echo "${MYSQL_RESULT}" > "${MYSQL_QUERY_RESULT_FILE}"
+        echo "$result" | tail -n 1 > "$affectedRowFile"
+    elif [[ $method -eq ${BP_MYSQL_SELECTING_METHOD} ]]; then
+        if [[ "$options" == *"${BP_MYSQL_COLUMN_NAMES_OPTS}"* ]]; then
+            echo "$result" > "$queryResultFile"
         else
             # Extract header with columns names in dedicated file
-            echo "${MYSQL_RESULT}" | head -n 1 > "${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_COLUMN_NAMES_EXT}"
+            echo "$result" | head -n 1 > "${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_COLUMN_NAMES_EXT}"
             # Keep only datas
-            echo "${MYSQL_RESULT}" | sed 1d > "${MYSQL_QUERY_RESULT_FILE}"
+            echo "$result" | sed 1d > "$queryResultFile"
         fi
-        echo -n "${MYSQL_QUERY_CHECKSUM}"
+        echo -n "$queryChecksum"
     fi
 }
 
@@ -214,14 +214,14 @@ function __mysql_query ()
 # @return string
 function __mysql_fetch_array ()
 {
-    declare -i MYSQL_QUERY_CHECKSUM="$1"
-    local MYSQL_SRC_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-    if [[ "${MYSQL_QUERY_CHECKSUM}" -eq 0 || ! -f "${MYSQL_SRC_FILE}" ]]; then
+    declare -i queryChecksum="$1"
+    local srcFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_RESULT_EXT}"
+    if [[ "$queryChecksum" -eq 0 || ! -f "$srcFile" ]]; then
         return 1
     fi
-    local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_NUM}${BP_MYSQL_RESULT_EXT}"
+    local dstFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}-${BP_MYSQL_RESULT_NUM}${BP_MYSQL_RESULT_EXT}"
 
-    if [[ ! -f "${MYSQL_DST_FILE}" ]]; then
+    if [[ ! -f "$dstFile" ]]; then
         awk 'BEGIN { FS="\x09" }
         {
             printf("(")
@@ -230,10 +230,10 @@ function __mysql_fetch_array ()
                 printf("[%d]=\"%s\" ", (i-1), $i)
             }
             printf(")\n")
-        }' "${MYSQL_SRC_FILE}" > "${MYSQL_DST_FILE}"
+        }' "$srcFile" > "$dstFile"
     fi
 
-    cat "${MYSQL_DST_FILE}"
+    cat "$dstFile"
 }
 
 ##
@@ -242,16 +242,16 @@ function __mysql_fetch_array ()
 # @return string
 function __mysql_fetch_assoc ()
 {
-    declare -i MYSQL_QUERY_CHECKSUM="$1"
-    local MYSQL_SRC_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-    local MYSQL_NMS_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_COLUMN_NAMES_EXT}"
-    if [[ "${MYSQL_QUERY_CHECKSUM}" -eq 0 || ! -f "${MYSQL_SRC_FILE}" || ! -f "${MYSQL_NMS_FILE}" ]]; then
+    declare -i queryChecksum="$1"
+    local srcFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_RESULT_EXT}"
+    local nmsFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_COLUMN_NAMES_EXT}"
+    if [[ "$queryChecksum" -eq 0 || ! -f "$srcFile" || ! -f "$nmsFile" ]]; then
         return 1
     fi
-    local MYSQL_COLUMN_NAMES=$(cat "${MYSQL_NMS_FILE}")
-    local MYSQL_DST_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}-${BP_MYSQL_RESULT_ASSOC}${BP_MYSQL_RESULT_EXT}"
+    local MYSQL_COLUMN_NAMES=$(cat "$nmsFile")
+    local dstFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}-${BP_MYSQL_RESULT_ASSOC}${BP_MYSQL_RESULT_EXT}"
 
-    if [[ ! -f "${MYSQL_DST_FILE}" ]]; then
+    if [[ ! -f "$dstFile" ]]; then
         awk -v cn="${MYSQL_COLUMN_NAMES}" '
         BEGIN {
             FS="\x09"
@@ -264,10 +264,10 @@ function __mysql_fetch_assoc ()
                 printf("[%s]=\"%s\" ", h[i], $i)
             }
             printf(")\n")
-        }' "${MYSQL_SRC_FILE}" > "${MYSQL_DST_FILE}"
+        }' "$srcFile" > "$dstFile"
     fi
 
-    cat "${MYSQL_DST_FILE}"
+    cat "$dstFile"
 }
 
 ##
@@ -281,12 +281,12 @@ function __mysql_fetch_assoc ()
 # @return int
 function mysqlAffectedRows ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_AFFECTED_ROW_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_AFFECTED_ROW_EXT}"
-    if [[ "${MYSQL_CHECKSUM}" -eq 0 || ! -f "${MYSQL_AFFECTED_ROW_FILE}" ]]; then
+    declare -i checksum="$1"
+    local affectedRowFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_AFFECTED_ROW_EXT}"
+    if [[ "$checksum" -eq 0 || ! -f "$affectedRowFile" ]]; then
         echo -n "-1"
     else
-        cat "${MYSQL_AFFECTED_ROW_FILE}"
+        cat "$affectedRowFile"
     fi
 }
 
@@ -296,27 +296,27 @@ function mysqlAffectedRows ()
 # @returnStatus 1 If workspace does not exist
 function mysqlClose ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ "${MYSQL_CHECKSUM}" -eq 0 || ! -f "${MYSQL_CONNECT_FILE}" ]]; then
+    declare -i checksum="$1"
+    local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ "$checksum" -eq 0 || ! -f "$connectFile" ]]; then
         return 1
     fi
 
     # Remove connection file
-    rm -f "${MYSQL_CONNECT_FILE}"
+    rm -f "$connectFile"
     # Remove all result files
-    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}*${BP_MYSQL_RESULT_EXT}"
+    rm -f "${BP_MYSQL_WRK_DIR}/${checksum}*${BP_MYSQL_RESULT_EXT}"
     # Remove last error file
-    rm -f "${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
+    rm -f "${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
 }
 
 ##
-# Registry to save connection informations to a mysql server
+# Registry to save connection properties to a mysql server
 # @param string $1 Host
 # @param string $2 Username
 # @param string $3 password
 # @param string $4 Database
-# @param int $5 Connect timeout
+# @param int $5 Connect timeOut
 # @param int $6 Enable cache
 # @return int Database link
 # @returnStatus 2 If mysql command line tool is not available
@@ -324,25 +324,25 @@ function mysqlClose ()
 # @returnStatus 1 If connection failed
 function mysqlConnect ()
 {
-    local MYSQL_HOST="$1"
-    local MYSQL_USER="$2"
-    local MYSQL_PASS="$3"
-    local MYSQL_DB="$4"
-    declare -i MYSQL_TO=0
-    declare -i MYSQL_CACHED=0
+    local host="$1"
+    local user="$2"
+    local pass="$3"
+    local db="$4"
+    declare -i timeOut=0
+    declare -i cached=0
 
     if [[ ${BP_MYSQL} -eq 0 ]]; then
         # Mysql as command line is required
         return 2
-    elif [[ -z "${MYSQL_HOST}" || -z "${MYSQL_USER}" || -z "${MYSQL_DB}" ]]; then
-        # Only password can be empty (usefull for local access on unsecure database)
+    elif [[ -z "$host" || -z "$user" || -z "$db" ]]; then
+        # Only password can be empty (usefull for local access on insecure database)
         return 1
     fi
     if [[ -n "$5" ]]; then
-        MYSQL_TO="$5"
+        timeOut="$5"
     fi
     if [[ -n "$6" ]]; then
-        MYSQL_CACHED="$6"
+        cached="$6"
     fi
 
     # Create workspace directory
@@ -351,30 +351,30 @@ function mysqlConnect ()
     fi
 
     # Create connection
-    local MYSQL_CHECKSUM="${MYSQL_HOST}${BP_MYSQL_CHK_SEP}${MYSQL_USER}${BP_MYSQL_CHK_SEP}${MYSQL_PASS}${BP_MYSQL_CHK_SEP}${MYSQL_DB}"
-    MYSQL_CHECKSUM=$(__mysql_checksum "${MYSQL_CHECKSUM}")
+    local checksum="${host}${BP_MYSQL_CHK_SEP}${user}${BP_MYSQL_CHK_SEP}${pass}${BP_MYSQL_CHK_SEP}${db}"
+    checksum=$(__mysql_checksum "$checksum")
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    local MYSQL_CHECKSUM_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ ! -f "${MYSQL_CHECKSUM_FILE}" ]]; then
+    local checksumFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ ! -f "${checksumFile}" ]]; then
         # Try to connect to mysql server and use database
-        local MYSQL_OPTIONS MYSQL_DRYRUN
-        MYSQL_OPTIONS=$(__mysql_options "${MYSQL_HOST}" "${MYSQL_USER}" "${MYSQL_PASS}" "${MYSQL_TO}")
-        MYSQL_DRYRUN=$(mysql ${MYSQL_OPTIONS} -e "USE ${MYSQL_DB};" 2>&1 >/dev/null)
+        local options dryRun
+        options=$(__mysql_options "$host" "$user" "$pass" "$timeOut")
+        dryRun=$(mysql $options -e "USE ${db};" 2>&1 >/dev/null)
         if [[ $? -ne 0 ]]; then
             return 1
         fi
 
         # Create link for this connection and save properties
-        echo -e "${MYSQL_HOST}\n${MYSQL_USER}\n${MYSQL_PASS}\n${MYSQL_DB}\n${MYSQL_TO}\n${MYSQL_CACHED}" > "${MYSQL_CHECKSUM_FILE}"
+        echo -e "${host}\n${user}\n${pass}\n${db}\n${timeOut}\n${cached}" > "${checksumFile}"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
     fi
 
-    echo -n "${MYSQL_CHECKSUM}"
+    echo -n "$checksum"
 }
 
 ##
@@ -384,13 +384,13 @@ function mysqlConnect ()
 # @return string
 function mysqlLastError ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_ERROR_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_ERROR_EXT}"
-    if [[ "${MYSQL_CHECKSUM}" -eq 0 || ! -f "${MYSQL_ERROR_FILE}" ]]; then
+    declare -i checksum="$1"
+    local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
+    if [[ "$checksum" -eq 0 || ! -f "$errorFile" ]]; then
         return 0
     fi
 
-    cat "${MYSQL_ERROR_FILE}"
+    cat "$errorFile"
 }
 
 ##
@@ -414,33 +414,30 @@ function mysqlEscapeString ()
 # @returnStatus 1 If query failed
 function mysqlFetchAll ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_QUERY="$2"
-    local MYSQL_RESULT_MODE="$3"
-    local MYSQL_OPTIONS
-    case "${MYSQL_RESULT_MODE}" in
-        ${BP_MYSQL_RESULT_ASSOC}) MYSQL_OPTIONS=${BP_MYSQL_OPTS} ;;
-        *) MYSQL_OPTIONS=${BP_MYSQL_BASIC_OPTS} ;;
+    declare -i checksum="$1"
+    local query="$2"
+    local resultMode="$3"
+    local options
+    case "${resultMode}" in
+        ${BP_MYSQL_RESULT_ASSOC}) options=${BP_MYSQL_OPTS} ;;
+        *) options=${BP_MYSQL_BASIC_OPTS} ;;
     esac
 
-    local MYSQL_QUERY_CHECKSUM
-    MYSQL_QUERY_CHECKSUM=$(__mysql_query "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${MYSQL_OPTIONS}")
+    local queryChecksum
+    queryChecksum=$(__mysql_query "$checksum" "$query" "$options")
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    case "${MYSQL_RESULT_MODE}" in
+    case "${resultMode}" in
         ${BP_MYSQL_RESULT_RAW})
-            cat "${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-            return $?
+            cat "${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_RESULT_EXT}"
             ;;
         ${BP_MYSQL_RESULT_ASSOC})
-            __mysql_fetch_assoc "${MYSQL_QUERY_CHECKSUM}"
-            return $?
+            __mysql_fetch_assoc "$queryChecksum"
             ;;
         ${BP_MYSQL_RESULT_NUM}|*)
-            __mysql_fetch_array "${MYSQL_QUERY_CHECKSUM}"
-            return $?
+            __mysql_fetch_array "$queryChecksum"
             ;;
     esac
 }
@@ -455,11 +452,10 @@ function mysqlFetchAll ()
 # @returnStatus 1 If query failed
 function mysqlFetchAssoc ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_QUERY="$2"
+    declare -i checksum="$1"
+    local query="$2"
 
-    mysqlFetchAll "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_RESULT_ASSOC}"
-    return $?
+    mysqlFetchAll "$checksum" "$query" "${BP_MYSQL_RESULT_ASSOC}"
 }
 
 ##
@@ -472,11 +468,10 @@ function mysqlFetchAssoc ()
 # @returnStatus 1 If query failed
 function mysqlFetchArray ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_QUERY="$2"
+    declare -i checksum="$1"
+    local query="$2"
 
-    mysqlFetchAll "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_RESULT_NUM}"
-    return $?
+    mysqlFetchAll "$checksum" "$query" "${BP_MYSQL_RESULT_NUM}"
 }
 
 ##
@@ -489,11 +484,10 @@ function mysqlFetchArray ()
 # @returnStatus 1 If query failed
 function mysqlFetchRaw ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_QUERY="$2"
+    declare -i checksum="$1"
+    local query="$2"
 
-    mysqlFetchAll "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_RESULT_RAW}"
-    return $?
+    mysqlFetchAll "$checksum" "$query" "${BP_MYSQL_RESULT_RAW}"
 }
 
 ##
@@ -503,12 +497,12 @@ function mysqlFetchRaw ()
 # @return int
 function mysqlNumRows ()
 {
-    declare -i MYSQL_QUERY_CHECKSUM="$1"
-    local MYSQL_QUERY_RESULT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_QUERY_CHECKSUM}${BP_MYSQL_RESULT_EXT}"
-    if [[ "${MYSQL_QUERY_CHECKSUM}" -eq 0 || ! -f "${MYSQL_QUERY_RESULT_FILE}" ]]; then
+    declare -i queryChecksum="$1"
+    local queryResultFile="${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_RESULT_EXT}"
+    if [[ "$queryChecksum" -eq 0 || ! -f "$queryResultFile" ]]; then
         echo -n "-1"
     else
-        echo -n $(wc -l < "${MYSQL_QUERY_RESULT_FILE}")
+        echo -n $(wc -l < "$queryResultFile")
     fi
 }
 
@@ -521,21 +515,21 @@ function mysqlNumRows ()
 # @returnStatus 1 If option does not exist
 function mysqlOption ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_CONNECT_FILE="${BP_MYSQL_WRK_DIR}/${MYSQL_CHECKSUM}${BP_MYSQL_CONNECT_EXT}"
-    if [[ "${MYSQL_CHECKSUM}" -eq 0 || ! -f "${MYSQL_CONNECT_FILE}" || -z "$2" || -z "$3" ]]; then
+    declare -i checksum="$1"
+    local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ "$checksum" -eq 0 || ! -f "$connectFile" || -z "$2" || -z "$3" ]]; then
         return 1
     fi
 
-    declare -i MYSQL_OPTION="$2"
-    case "${MYSQL_OPTION}" in
+    declare -i option="$2"
+    case "${option}" in
         ${BP_MYSQL_TO})
-            declare -i CONNECT_TIMEOUT="$3"
-            sed -i -e $((${BP_MYSQL_TO}+1))'s/.*/'${CONNECT_TIMEOUT}'/' "${MYSQL_CONNECT_FILE}"
+            declare -i timeOut="$3"
+            sed -i -e $((${BP_MYSQL_TO}+1))'s/.*/'${timeOut}'/' "$connectFile"
             ;;
         ${BP_MYSQL_CACHED})
-            declare -i CACHED="$3"
-            sed -i -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${CACHED}'/' "${MYSQL_CONNECT_FILE}"
+            declare -i cached="$3"
+            sed -i -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${cached}'/' "$connectFile"
             ;;
         *) return 1 ;;
     esac
@@ -553,9 +547,8 @@ function mysqlOption ()
 # @returnStatus 1 If query failed
 function mysqlQuery ()
 {
-    declare -i MYSQL_CHECKSUM="$1"
-    local MYSQL_QUERY="$2"
+    declare -i checksum="$1"
+    local query="$2"
 
-    __mysql_query "${MYSQL_CHECKSUM}" "${MYSQL_QUERY}" "${BP_MYSQL_BASIC_OPTS}"
-    return $?
+    __mysql_query "$checksum" "$query" "${BP_MYSQL_BASIC_OPTS}"
 }

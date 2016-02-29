@@ -22,22 +22,22 @@ declare -r BP_USER_NAME="$(logname)"
 # @returnStatus 1 If first parameter named path does not exist
 function include ()
 {
-    local FILE_PATH
-    FILE_PATH="$(realpath "$1")"
-    if [[ $? -ne 0 || ! -f "$FILE_PATH" ]]; then
+    local filePath
+    filePath="$(realpath "$1")"
+    if [[ $? -ne 0 || ! -f "$filePath" ]]; then
         return  1
     fi
 
     declare -i ONCE="$2"
-    if [[ -z "${BP_INCLUDE_FILE["$FILE_PATH"]}" ]]; then
-        BP_INCLUDE_FILE["$FILE_PATH"]=1
+    if [[ -z "${BP_INCLUDE_FILE[$filePath]}" ]]; then
+        BP_INCLUDE_FILE[$filePath]=1
     elif [[ "$ONCE" -eq 0 ]]; then
-        BP_INCLUDE_FILE["$FILE_PATH"]+=1
+        BP_INCLUDE_FILE[$filePath]+=1
     else
         return 0
     fi
 
-    source "$FILE_PATH"
+    source "$filePath"
 }
 
 ##
@@ -66,9 +66,9 @@ function import ()
         return 1
     fi
 
-    local FILE_PATH
-    for FILE_PATH in "$@"; do
-        includeOnce "${FILE_PATH}"
+    local filePath
+    for filePath in "$@"; do
+        includeOnce "${filePath}"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
@@ -82,18 +82,18 @@ function import ()
 # @returnStatus 1 If first parameter named dir does not exists
 function physicalDirname ()
 {
-    local DIR="$1"
-    if [[ -z "$DIR" ]]; then
+    local dir="$1"
+    if [[ -z "$dir" ]]; then
         # Get current directory path
-        DIR="$PWD"
-    elif [[ ! -d "$DIR" ]]; then
+        dir="$PWD"
+    elif [[ ! -d "$dir" ]]; then
         # DirPath is not a directory
-        DIR="$(dirname "$DIR")"
+        dir="$(dirname "$dir")"
     fi
 
-    DIR="$(cd "$DIR" 2>/dev/null && pwd -P)"
-    if [[ $? -eq 0 && -n "$DIR" ]]; then
-        echo -n "${DIR}"
+    dir="$(cd "$dir" 2>/dev/null && pwd -P)"
+    if [[ $? -eq 0 && -n "$dir" ]]; then
+        echo -n "${dir}"
     else
         return 1
     fi
@@ -108,34 +108,34 @@ function physicalDirname ()
 # @returnStatus 1 If first parameter named path does not exist
 function realpath ()
 {
-    local DEST_PATH="$1"
-    if [[ -z "$DEST_PATH" ]]; then
+    local dstPath="$1"
+    if [[ -z "$dstPath" ]]; then
         return 1
     fi
-    local SOURCE_DIR="$(physicalDirname "$0")"
-    if [[ $? -ne 0 || -z "$SOURCE_DIR" ]]; then
+    local srcDir="$(physicalDirname "$0")"
+    if [[ $? -ne 0 || -z "$srcDir" ]]; then
         return 1
     fi
 
     # Transform relative path to physical path
-    DEST_PATH=$(resolvePath "$DEST_PATH" "$SOURCE_DIR")
-    if [[ -z "$DEST_PATH" ]]; then
+    dstPath=$(resolvePath "$dstPath" "$srcDir")
+    if [[ -z "$dstPath" ]]; then
         return 1
     fi
 
-    local DEST_DIR="$(physicalDirname "$DEST_PATH")"
-    if [[ $? -ne 0 || -z "$DEST_DIR" ]]; then
+    local dstDir="$(physicalDirname "$dstPath")"
+    if [[ $? -ne 0 || -z "$dstDir" ]]; then
         # No directory
         return 1
-    elif [[ -d "$DEST_PATH" ]]; then
+    elif [[ -d "$dstPath" ]]; then
         # Directory
-        echo -n ${DEST_DIR}
-    elif [[ ! -f "$DEST_PATH" ]]; then
+        echo -n ${dstDir}
+    elif [[ ! -f "$dstPath" ]]; then
         # No file
         return 1
     else
         # File
-        echo -n "${DEST_DIR}/$(basename "$DEST_PATH")"
+        echo -n "${dstDir}/$(basename "$dstPath")"
     fi
 }
 
@@ -147,48 +147,48 @@ function realpath ()
 # @return string
 function resolvePath ()
 {
-    local DEST_PATH DEST_FILE DEST_DIR SOURCE_DIR
+    local dstPath dstFile dstDir srcDir
 
     if [[ -z "$1" ]]; then
         # Current path
-        DEST_DIR="$PWD"
-        DEST_FILE="$(basename "$0")"
-        DEST_PATH="${DEST_DIR}/${DEST_FILE}"
-        SOURCE_DIR="$DEST_DIR"
+        dstDir="$PWD"
+        dstFile="$(basename "$0")"
+        dstPath="${dstDir}/${dstFile}"
+        srcDir="$dstDir"
     else
-        DEST_PATH="$1"
-        DEST_DIR="$(dirname "$DEST_PATH")"
-        DEST_FILE="$(basename "$DEST_PATH")"
-        SOURCE_DIR="$2"
-        if [[ -z "$SOURCE_DIR" ]]; then
-            SOURCE_DIR="$(physicalDirname "$0")"
+        dstPath="$1"
+        dstDir="$(dirname "$dstPath")"
+        dstFile="$(basename "$dstPath")"
+        srcDir="$2"
+        if [[ -z "$srcDir" ]]; then
+            srcDir="$(physicalDirname "$0")"
             if [[ $? -ne 0 ]]; then
                 return 0
             fi
         fi
     fi
 
-    if [[ "$DEST_PATH" == "."* ]]; then
+    if [[ "$dstPath" == "."* ]]; then
         # ../test.sh
-        DEST_PATH="${SOURCE_DIR}/${DEST_DIR}/${DEST_FILE}"
-    elif [[ "$DEST_PATH" == "~/"* ]]; then
+        dstPath="${srcDir}/${dstDir}/${dstFile}"
+    elif [[ "$dstPath" == "~/"* ]]; then
         # ~/test.sh
-        DEST_PATH="$(userHome)/${DEST_PATH:2}"
+        dstPath="$(userHome)/${dstPath:2}"
         if [[ $? -ne 0 ]]; then
             return 0
         fi
-    elif [[ "$DEST_PATH" != "/"* ]]; then
-        if [[ "$DEST_DIR" == "." ]]; then
+    elif [[ "$dstPath" != "/"* ]]; then
+        if [[ "$dstDir" == "." ]]; then
             # test.sh
-            DEST_PATH="${SOURCE_DIR}/${DEST_FILE}"
+            dstPath="${srcDir}/${dstFile}"
         else
             # test/test.sh
-            DEST_PATH="${SOURCE_DIR}/${DEST_DIR}/${DEST_FILE}"
+            dstPath="${srcDir}/${dstDir}/${dstFile}"
         fi
     fi
 
     # /test.sh
-    echo -n "$DEST_PATH"
+    echo -n "$dstPath"
 }
 
 ##
@@ -200,28 +200,28 @@ function resolvePath ()
 # @returnStatus 1 If first parameter named path does not exist or not a folder
 function scanDirectory ()
 {
-    local SOURCE_DIR="$1"
-    if [[ -z "${SOURCE_DIR}" ]]; then
-        SOURCE_DIR="$(dirname "$0")"
+    local srcDir="$1"
+    if [[ -z "$srcDir" ]]; then
+        srcDir="$(dirname "$0")"
     fi
-    SOURCE_DIR="$(realpath "${SOURCE_DIR}")"
-    if [[ $? -ne 0 || -z "${SOURCE_DIR}" ]]; then
+    srcDir="$(realpath "$srcDir")"
+    if [[ $? -ne 0 || -z "$srcDir" ]]; then
         return 1
     fi
-    declare -i WITH_FILE="$2"
-    declare -i COMPLETE_PATH="$3"
+    declare -i withFile="$2"
+    declare -i completePath="$3"
 
-    local SCAN_DIR
-    if [[ ${WITH_FILE} -eq 0 ]]; then
-        SCAN_DIR=$(ls -d "${SOURCE_DIR}"/*/)
+    local scanDir
+    if [[ ${withFile} -eq 0 ]]; then
+        scanDir=$(ls -d "$srcDir"/*/)
     else
-        SCAN_DIR=$(ls -d "${SOURCE_DIR}"/*)
+        scanDir=$(ls -d "$srcDir"/*)
     fi
 
-    if [[ ${COMPLETE_PATH} -eq 0 ]]; then
-        echo -e "${SCAN_DIR}" | sed -e "s/\/$//g" -e "s/^.*\///g"
+    if [[ ${completePath} -eq 0 ]]; then
+        echo -e "$scanDir" | sed -e "s/\/$//g" -e "s/^.*\///g"
     else
-        echo -e "${SCAN_DIR}"
+        echo -e "$scanDir"
     fi
 }
 
@@ -232,17 +232,17 @@ function scanDirectory ()
 # @returnStatus 1 If sudo to get home path fails
 function userHome ()
 {
-    if [[ -z "$BP_USER_NAME" ]]; then
+    if [[ -z "${BP_USER_NAME}" ]]; then
         return 1
-    elif [[ -z "$BP_USER_HOME" ]]; then
+    elif [[ -z "${BP_USER_HOME}" ]]; then
         BP_USER_HOME="$(sudo -u ${BP_USER_NAME} -H sh -c 'echo "$HOME"')"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
     fi
 
-    if [[ -n "$BP_USER_HOME" ]]; then
-        echo -n "$BP_USER_HOME"
+    if [[ -n "${BP_USER_HOME}" ]]; then
+        echo -n "${BP_USER_HOME}"
     else
         return 1
     fi
