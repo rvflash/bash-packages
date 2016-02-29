@@ -23,18 +23,18 @@ declare -r BP_ARRAY_ASSOCIATIVE_TYPE="A"
 # @return string
 function __arrayType ()
 {
-    local ARRAY="$1"
-    if [[ "$ARRAY" == "declare -${BP_ARRAY_INDEXED_TYPE}"* ]]; then
+    local arr="$1"
+    if [[ "$arr" == "declare -${BP_ARRAY_INDEXED_TYPE}"* ]]; then
         # declare -A NAME='([0]="v1" [1]="v2")'
         echo -n ${BP_ARRAY_DECLARED_INDEXED_TYPE}
-    elif [[ "$ARRAY" == "declare -${BP_ARRAY_ASSOCIATIVE_TYPE}"* ]]; then
+    elif [[ "$arr" == "declare -${BP_ARRAY_ASSOCIATIVE_TYPE}"* ]]; then
         # declare -A NAME='(["k0"]="v1" ["k1"]="v2")'
         echo -n ${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}
-    elif [[ "$ARRAY" == "("*")" ]]; then
-        if [[ "$ARRAY" =~ ^\(([[:space:]]*)?\[[0-9]+\]=.*$ ]]; then
+    elif [[ "$arr" == "("*")" ]]; then
+        if [[ "$arr" =~ ^\(([[:space:]]*)?\[[0-9]+\]=.*$ ]]; then
             # ([0]="v1" [1]="v2")
             echo -n ${BP_ARRAY_INDEXED_TYPE}
-        elif [[ "$ARRAY" =~ ^\(([[:space:]]*)?\[.*$ ]]; then
+        elif [[ "$arr" =~ ^\(([[:space:]]*)?\[.*$ ]]; then
             # (["k0"]="v1" ["k1"]="v2")
             echo -n ${BP_ARRAY_ASSOCIATIVE_TYPE}
         else
@@ -56,64 +56,64 @@ function __arrayType ()
 # @example inputs '(["k0"]="v1" ["k1"]="v2" ["k2"]="v3")" "v1"
 # @example return "(["k0"]="v1")"
 #
-# @param arrayToString $1
-# @param arrayToString $2
+# @param arrayToString $1 Arr1
+# @param arrayToString $2 Arr2
 # @return arrayToString
 function arrayDiff ()
 {
-    local HAYSTACK_1="$1"
-    local TYPE_1="$(__arrayType "${HAYSTACK_1}")"
-    if [[ "${TYPE_1}" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY_1="$(arrayToString "${HAYSTACK_1}")"
-    elif [[ "${TYPE_1}" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY_1="$(arrayToString "${HAYSTACK_1}")"
-    elif [[ "${TYPE_1}" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY_1="${HAYSTACK_1}"
-    elif [[ "${TYPE_1}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY_1="${HAYSTACK_1}"
+    local haystack1="$1"
+    local type1="$(__arrayType "$haystack1")"
+    if [[ "$type1" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr1="$(arrayToString "$haystack1")"
+    elif [[ "$type1" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr1="$(arrayToString "$haystack1")"
+    elif [[ "$type1" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr1="$haystack1"
+    elif [[ "$type1" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr1="$haystack1"
     else
-        declare -a ARRAY_1="(${HAYSTACK_1})"
+        declare -a arr1="(${haystack1})"
     fi
-    if [[ "${#ARRAY_1[@]}" -eq 0 ]]; then
+    if [[ "${#arr1[@]}" -eq 0 ]]; then
         echo -n "()"
         return 0
     fi
 
-    local HAYSTACK_2="$2"
-    local TYPE_2="$(__arrayType "${HAYSTACK_2}")"
-    if [[ "${TYPE_2}" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY_2="$(arrayToString "${HAYSTACK_2}")"
-    elif [[ "${TYPE_2}" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY_2="$(arrayToString "${HAYSTACK_2}")"
-    elif [[ "${TYPE_2}" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY_2="${HAYSTACK_2}"
-    elif [[ "${TYPE_2}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY_2="${HAYSTACK_2}"
+    local haystack2="$2"
+    local type2="$(__arrayType "$haystack2")"
+    if [[ "$type2" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr2="$(arrayToString "$haystack2")"
+    elif [[ "$type2" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr2="$(arrayToString "$haystack2")"
+    elif [[ "$type2" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr2="$haystack2"
+    elif [[ "$type2" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr2="$haystack2"
     else
-        declare -a ARRAY_2="(${HAYSTACK_2})"
+        declare -a arr2="(${haystack2})"
     fi
-    if [[ "${#ARRAY_2[@]}" -eq 0 ]]; then
-        arrayToString "$(declare -p ARRAY_1)"
+    if [[ "${#arr2[@]}" -eq 0 ]]; then
+        arrayToString "$(declare -p arr1)"
         return 0
     fi
 
-    if [[ "${TYPE_1: -1}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A DIFFERENCE=()
+    if [[ "${type1: -1}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A diff=()
     else
-        declare -a DIFFERENCE=()
+        declare -a diff=()
     fi
 
-    declare -i SKIP
-    local KEY_1 VALUE_2
-    for KEY_1 in "${!ARRAY_1[@]}"; do
-        SKIP=0
-        for VALUE_2 in "${ARRAY_2[@]}"; do
-            [[ "${ARRAY_1[$KEY_1]}" == "$VALUE_2" ]] && { SKIP=1; break; }
+    declare -i skip
+    local key1 val2
+    for key1 in "${!arr1[@]}"; do
+        skip=0
+        for val2 in "${arr2[@]}"; do
+            [[ "${arr1[$key1]}" == "$val2" ]] && { skip=1; break; }
         done
-        [[ ${SKIP} -eq 1 ]] || DIFFERENCE["$KEY_1"]="${ARRAY_1[$KEY_1]}"
+        [[ ${skip} -eq 1 ]] || diff["$key1"]="${arr1[$key1]}"
     done
 
-    arrayToString "$(declare -p DIFFERENCE)"
+    arrayToString "$(declare -p diff)"
 }
 
 ##
@@ -132,30 +132,29 @@ function arrayDiff ()
 # @returnStatus 1 If needle does not exist in haystack
 function arraySearch ()
 {
-    local NEEDLE="$1"
-    if [[ -z "$NEEDLE" ]]; then
+    local needle="$1"
+    if [[ -z "$needle" ]]; then
         return 1
     fi
 
-    local HAYSTACK="$2"
-    local TYPE="$(__arrayType "${HAYSTACK}")"
-    if [[ "$TYPE" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="${HAYSTACK}"
-    elif [[ "$TYPE" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="${HAYSTACK}"
+    local haystack="$2"
+    local type="$(__arrayType "${haystack}")"
+    if [[ "$type" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr="$(arrayToString "${haystack}")"
+    elif [[ "$type" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$(arrayToString "${haystack}")"
+    elif [[ "$type" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr="${haystack}"
+    elif [[ "$type" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="${haystack}"
     else
-        declare -a ARRAY="(${HAYSTACK})"
+        declare -a arr="(${haystack})"
     fi
-    declare -i LENGTH="${#ARRAY[@]}"
 
-    local KEY
-    for KEY in "${!ARRAY[@]}"; do
-        if [[ "${ARRAY[$KEY]}" == ${NEEDLE} ]]; then
-            echo -n "$KEY"
+    local key
+    for key in "${!arr[@]}"; do
+        if [[ "${arr[$key]}" == $needle ]]; then
+            echo -n "$key"
             return 0
         fi
     done
@@ -177,20 +176,20 @@ function arraySearch ()
 # @return string
 function arrayToString ()
 {
-    local ARRAY_TO_STRING="$1"
-    if [[ -z "$ARRAY_TO_STRING" ]]; then
+    local str="$1"
+    if [[ -z "$str" ]]; then
         echo -n "()"
         return 0
     fi
 
     # Remove declare -OPTIONS NAME='(
-    ARRAY_TO_STRING="${ARRAY_TO_STRING#*\(}"
+    str="${str#*\(}"
     # Remove )'
-    ARRAY_TO_STRING="${ARRAY_TO_STRING%\)*}"
+    str="${str%\)*}"
     # Remove escaping of single quote (') by declare function
-    ARRAY_TO_STRING="${ARRAY_TO_STRING//\\\'\'/}"
+    str="${str//\\\'\'/}"
 
-    echo -n "(${ARRAY_TO_STRING})"
+    echo -n "(${str})"
 }
 
 ##
@@ -199,28 +198,28 @@ function arrayToString ()
 # return int
 function count ()
 {
-    declare -i COUNT=0
-    local HAYSTACK="$1"
-    if [[ -z "${HAYSTACK}" || "${HAYSTACK}" =~ ^\(([[:space:]]*)?\)*$ ]]; then
-        echo -n ${COUNT}
+    declare -i count=0
+    local haystack="$1"
+    if [[ -z "$haystack" || "$haystack" =~ ^\(([[:space:]]*)?\)*$ ]]; then
+        echo -n ${count}
         return 0
     fi
 
-    local TYPE="$(__arrayType "${HAYSTACK}")"
-    if [[ "$TYPE" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="${HAYSTACK}"
-    elif [[ "$TYPE" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="${HAYSTACK}"
+    local type="$(__arrayType "$haystack")"
+    if [[ "$type" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr="$haystack"
+    elif [[ "$type" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$haystack"
     else
-        declare -a ARRAY="(${HAYSTACK})"
+        declare -a arr="(${haystack})"
     fi
-    COUNT=${#ARRAY[@]}
+    count=${#arr[@]}
 
-    echo -n ${COUNT}
+    echo -n ${count}
 }
 
 ##
@@ -231,27 +230,27 @@ function count ()
 # @returnStatus 1 If needle does not exist in haystack
 function inArray ()
 {
-    local NEEDLE="$1"
-    if [[ -z "$NEEDLE" ]]; then
+    local needle="$1"
+    if [[ -z "$needle" ]]; then
         return 1
     fi
 
-    local HAYSTACK="$2"
-    local TYPE="$(__arrayType "${HAYSTACK}")"
-    if [[ "$TYPE" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="$(arrayToString "${HAYSTACK}")"
-    elif [[ "$TYPE" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
-        declare -a ARRAY="${HAYSTACK}"
-    elif [[ "$TYPE" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
-        declare -A ARRAY="${HAYSTACK}"
+    local haystack="$2"
+    local type="$(__arrayType "$haystack")"
+    if [[ "$type" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr="$haystack"
+    elif [[ "$type" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$haystack"
     else
-        declare -a ARRAY="(${HAYSTACK})"
+        declare -a arr="(${haystack})"
     fi
 
-    for VALUE in ${ARRAY[@]}; do
-        if [[ "${VALUE}" == ${NEEDLE} ]]; then
+    for VALUE in ${arr[@]}; do
+        if [[ "${VALUE}" == $needle ]]; then
             return 0
         fi
     done

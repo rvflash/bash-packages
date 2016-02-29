@@ -14,22 +14,22 @@
 # Calculate and return a checksum for one string
 # @param string $1 Str
 # @return string
-# @returnStatus If first parameter named string is empty
-# @returnStatus If checkum is empty or cksum methods returns in error
+# @returnStatus 1 If first parameter named string is empty
+# @returnStatus 1 If checkum is empty or cksum methods returns in error
 function checksum ()
 {
-    local STR="$1"
-    if [[ -z "$STR" ]]; then
+    local str="$1"
+    if [[ -z "$str" ]]; then
         return 1
     fi
 
-    local CHECKSUM
-    CHECKSUM="$(cksum <<<"$(trim "$STR")" | awk '{print $1}')"
-    if [[ $? -ne 0 || -z "$CHECKSUM" ]]; then
+    declare -i checksum
+    checksum="$(cksum <<<"$(trim "$str")" | awk '{print $1}')"
+    if [[ $? -ne 0 || -z "$checksum" ]]; then
         return 1
     fi
 
-    echo -n "$CHECKSUM"
+    echo -n "$checksum"
 }
 
 ##
@@ -45,8 +45,8 @@ function checksum ()
 # @returnStatus 1 If empty, 0 otherwise
 function isEmpty ()
 {
-    local STR="$1"
-    if [[ -z "$STR" || "$STR" == 0 || "$STR" == "0.0" || "$STR" == false || "$STR" =~ ^\(([[:space:]]*)?\)*$ ]]; then
+    local str="$1"
+    if [[ -z "$str" || "$str" == 0 || "$str" == "0.0" || "$str" == false || "$str" =~ ^\(([[:space:]]*)?\)*$ ]]; then
         return 0
     fi
 
@@ -61,19 +61,19 @@ function isEmpty ()
 # @return string
 function printLeftPadding ()
 {
-    local STR="$1"
-    declare -i PAD="$2"
-    local CHR="$3"
+    local str="$1"
+    declare -i pad="$2"
+    local chr="$3"
 
-    if [[ -z "${CHR}" ]]; then
-        PAD+=${#STR}
-        printf "%${PAD}s" "$STR"
+    if [[ -z "$chr" ]]; then
+        pad+=${#str}
+        printf "%${pad}s" "$str"
     else
-        if [[ ${PAD} -gt 1 ]]; then
-            local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
-            printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
+        if [[ ${pad} -gt 1 ]]; then
+            local PADDING=$(printf '%0.1s' "$chr"{1..500})
+            printf '%*.*s' 0 $((${pad} - 1)) "${PADDING}"
         fi
-        echo -n " $STR"
+        echo -n " $str"
     fi
 }
 
@@ -85,18 +85,18 @@ function printLeftPadding ()
 # @return string
 function printRightPadding ()
 {
-    local STR="$1"
-    declare -i PAD="$2"
-    local CHR="$3"
+    local str="$1"
+    declare -i pad="$2"
+    local chr="$3"
 
-    if [[ -z "${CHR}" ]]; then
-        PAD+=${#STR}
-        printf "%-${PAD}s" "$STR"
+    if [[ -z "$chr" ]]; then
+        pad+=${#str}
+        printf "%-${pad}s" "$str"
     else
-        echo -n "$STR "
-        if [[ ${PAD} -gt 1 ]]; then
-            local PADDING=$(printf '%0.1s' "${CHR}"{1..500})
-            printf '%*.*s' 0 $((${PAD} - 1)) "${PADDING}"
+        echo -n "$str "
+        if [[ ${pad} -gt 1 ]]; then
+            local PADDING=$(printf '%0.1s' "$chr"{1..500})
+            printf '%*.*s' 0 $((${pad} - 1)) "${PADDING}"
         fi
     fi
 }
@@ -108,18 +108,18 @@ function printRightPadding ()
 # @return string
 function trim ()
 {
-    local STR="$1"
-    if [[ -z "$STR" ]]; then
+    local str="$1"
+    if [[ -z "$str" ]]; then
         return 0
     fi
 
-    local MASK="$2"
-    if [[ -n "$MASK" ]]; then
+    local mask="$2"
+    if [[ -n "$mask" ]]; then
         # Escape special chars
-        MASK=$( echo "$MASK" | sed -e 's/[]\/$*.^|[]/\\&/g' )
+        mask=$( echo "$mask" | sed -e 's/[]\/$*.^|[]/\\&/g' )
         # Remove characters to mask
-        STR=$( echo "$STR" | sed -e "s/^[[:space:]]*[${MASK}]*//" -e "s/[${MASK}]*[[:space:]]*$//" )
+        str=$( echo "$str" | sed -e "s/^[[:space:]]*[${mask}]*//" -e "s/[${mask}]*[[:space:]]*$//" )
     fi
 
-    echo -n "$STR" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//"
+    echo -n "$str" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//"
 }
