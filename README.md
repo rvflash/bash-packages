@@ -12,12 +12,15 @@
 ## Package database/mysql
 
 > The mysql command is mandatory for this package
+> The mysqldump command is mandatory only for the method named mysqlDump
 
 * Function mysqlAffectedRows ( int resultLink ) int `?=0`
 * Function mysqlClose ( int databaseLink ) void `?>0 If database link does not exist`
-* Function mysqlConnect ( string host, string user, string pass, string database [ , int connectTimeout 0, int cached 0 ] ) int `?=2 If mysql method does not exist, 1 in case of error, 0 otherwise`
+* Function mysqlConnect ( string host, string user, string pass, string database [ , int connectTimeout 0, int cached 0 ] ) int `?=2 If mysql command does not exist, 1 in case of error, 0 otherwise`
+* Function mysqlDump ( int databaseLink [ , string table, string options ] ) string `?=2 If mysqldump command does not exist, 1 in case of error, 0 otherwise`
 * Function mysqlEscapeString ( string str ) string `?=0`
 * Function mysqlLastError ( int databaseLink ) string `?=0`
+* Function mysqlLoad ( int databaseLink, string filePath ) void `?=2 If mysql command does not exist, 1 in case of error, 0 otherwise`
 * Function mysqlFetchAll ( int databaseLink, string query [ , string options[ "raw", "num", "assoc" ] "num" ] ) string `?>0 In case of error`
 * Function mysqlFetchAssoc ( int databaseLink, string query ) string `?>0 In case of error`
 * Function mysqlFetchArray ( int databaseLink, string query ) string `?>0 In case of error`

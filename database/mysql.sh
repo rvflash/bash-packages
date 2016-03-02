@@ -12,6 +12,7 @@
 
 # Require mysql command line tool
 declare -r -i BP_MYSQL="$(if [[ -z "$(type -p mysql)" ]]; then echo 0; else echo 1; fi)"
+declare -r -i BP_MYSQL_DUMP="$(if [[ -z "$(type -p mysqldump)" ]]; then echo 0; else echo 1; fi)"
 declare -r -i BP_MYSQL_WRK=${RANDOM}
 declare -r BP_MYSQL_COLUMN_NAMES_OPTS="--skip-column-names"
 declare -r BP_MYSQL_OPTS="--batch --unbuffered --quick --show-warnings"
@@ -145,6 +146,7 @@ function __mysql_query ()
 {
     declare -a link
     declare -i checksum="$1"
+    local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
     local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
     if [[ ${BP_MYSQL} -eq 0 || "$checksum" -eq 0 || ! -f "$connectFile" ]]; then
         return 1
@@ -175,7 +177,7 @@ function __mysql_query ()
         return 0
     fi
 
-    local method
+    declare -i method
     if __mysql_is_affecting_method "$query"; then
         method=${BP_MYSQL_AFFECTING_METHOD}
         # Add ROW_COUNT query to known the number of affected rows
@@ -187,15 +189,14 @@ function __mysql_query ()
     fi
 
     local result
-    result=$(mysql $options ${link["${BP_MYSQL_DB}"]} -e "$query" 2>&1)
+    result=$(mysql ${options} ${link["${BP_MYSQL_DB}"]} -e "$query" 2>"$errorFile")
     if [[ $? -ne 0 ]]; then
         # An error occured
-        echo "$result" > "${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
         return 1
-    elif [[ $method -eq ${BP_MYSQL_AFFECTING_METHOD} ]]; then
+    elif [[ ${method} -eq ${BP_MYSQL_AFFECTING_METHOD} ]]; then
         # Extract result of the last query to get affected row count
         echo "$result" | tail -n 1 > "$affectedRowFile"
-    elif [[ $method -eq ${BP_MYSQL_SELECTING_METHOD} ]]; then
+    elif [[ ${method} -eq ${BP_MYSQL_SELECTING_METHOD} ]]; then
         if [[ "$options" == *"${BP_MYSQL_COLUMN_NAMES_OPTS}"* ]]; then
             echo "$result" > "$queryResultFile"
         else
@@ -378,6 +379,43 @@ function mysqlConnect ()
 }
 
 ##
+# Performs logical backups, producing a set of SQL statements that can be run to reproduce the original schema objects,
+# table data, or both. It dumps one or more MySQL database for backup or transfer to another SQL server.
+# @param int $1 Database link
+# @param string $2 Table name
+# @param string $3 Options
+# @return string
+# @returnStatus 2 If mysqldump command line is not available
+# @returnStatus 1 If connection or dump fails
+function mysqlDump ()
+{
+    declare -a link
+    declare -i checksum="$1"
+    local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
+    local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ ${BP_MYSQL_DUMP} -eq 0 || "$checksum" -eq 0 || ! -f "$connectFile" ]]; then
+        return 1
+    else
+        mapfile -t link < "$connectFile"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+    fi
+    local table="$2"
+    local options="$3"
+    options+=" $(__mysql_options "${link[${BP_MYSQL_HOST}]}" "${link[${BP_MYSQL_USER}]}" "${link[${BP_MYSQL_PASS}]}")"
+
+    local result
+    result=$(mysqldump ${options} ${link["${BP_MYSQL_DB}"]} ${table} 2>"$errorFile")
+    if [[ $? -ne 0 ]]; then
+        # An error occured
+        return 1
+    else
+        echo "$result"
+    fi
+}
+
+##
 # Returns a string description of the last error
 # If link is on error or there is no affected rows for this connexion
 # @param int Database link
@@ -391,6 +429,42 @@ function mysqlLastError ()
     fi
 
     cat "$errorFile"
+}
+
+##
+# Load a SQL file into the database
+# @param int $1 Database link
+# @param string $2 File path
+# @returnStatus 1 If first parameter named filePath does not exist
+# @returnStatus 1 If connection failed
+# @returnStatus 1 If data loading failed
+function mysqlLoad ()
+{
+    declare -a link
+    declare -i checksum="$1"
+    local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
+    local connectFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
+    if [[ ${BP_MYSQL} -eq 0 || "$checksum" -eq 0 || ! -f "$connectFile" ]]; then
+        return 1
+    else
+        mapfile -t link < "$connectFile"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+    fi
+    local filePath="$2"
+    if [[ -z "$filePath" || ! -f "$filePath" ]]; then
+        return 1
+    fi
+
+    local options="$(__mysql_options "${link[${BP_MYSQL_HOST}]}" "${link[${BP_MYSQL_USER}]}" "${link[${BP_MYSQL_PASS}]}" "${link[${BP_MYSQL_TO}]}")"
+
+    local result
+    result=$(mysql ${options} ${link["${BP_MYSQL_DB}"]} < "$filePath" 2>"$errorFile")
+    if [[ $? -ne 0 ]]; then
+        # An error occured
+        return 1
+    fi
 }
 
 ##
@@ -542,7 +616,7 @@ function mysqlOption ()
 # @param int $1 Database link
 # @param string $2 Query
 # @return int Result link (only in case of non DML queries)
-# @returnStatus 1 If first parameter named query is empty
+# @returnStatus 1 If second parameter named query is empty
 # @returnStatus 1 If database's host is unknown
 # @returnStatus 1 If query failed
 function mysqlQuery ()
