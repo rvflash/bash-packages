@@ -17,7 +17,9 @@ declare -r BP_TESTING_UNIT_FILE_SUFFIX="Test.sh"
 # ASCII Color
 declare -r BP_TESTING_COLOR_OFF='\033[0m'
 declare -r BP_TESTING_COLOR_RED='\033[0;31m'
+declare -r BP_TESTING_COLOR_RED_BG='\033[101m'
 declare -r BP_TESTING_COLOR_GREEN='\033[0;32m'
+declare -r BP_TESTING_COLOR_GREEN_BG='\033[42m'
 declare -r BP_TESTING_COLOR_YELLOW='\033[0;33m'
 declare -r BP_TESTING_COLOR_BLUE='\033[0;34m'
 declare -r BP_TESTING_COLOR_GRAY='\033[0;90m'
@@ -47,8 +49,8 @@ function bashUnit ()
         echo -ne "${BP_TESTING_COLOR_GREEN}OK${BP_TESTING_COLOR_OFF}\n"
     else
         echo -ne "${BP_TESTING_COLOR_YELLOW}KO${BP_TESTING_COLOR_OFF}\n"
-        echo -ne "    > ${BP_TESTING_COLOR_YELLOW}Expected:${BP_TESTING_COLOR_OFF} ${expected}\n"
-        echo -ne "    > ${BP_TESTING_COLOR_RED}Received:${BP_TESTING_COLOR_OFF} ${received}\n\n"
+        echo -ne "    > ${BP_TESTING_COLOR_GREEN}Expected:${BP_TESTING_COLOR_OFF} ${BP_TESTING_COLOR_GREEN_BG}${expected}${BP_TESTING_COLOR_OFF}\n"
+        echo -ne "    > ${BP_TESTING_COLOR_RED}Received:${BP_TESTING_COLOR_OFF} ${BP_TESTING_COLOR_RED_BG}${received}${BP_TESTING_COLOR_OFF}\n"
     fi
 }
 
