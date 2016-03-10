@@ -3,6 +3,7 @@
 ## Package array
 
 * Function arrayDiff ( array haystack1, array haystack2 ) array `?=0`
+* Function arrayMerge ( array haystack1, array haystack2 ) array `?=0`
 * Function arraySearch ( string needle, array haystack ) mixed `?=0 if needle is found, 1 otherwise`
 * Function arrayToString ( string arrayDeclaration ) string `?=0`
 * Function count ( mixed value ) int `?=0`

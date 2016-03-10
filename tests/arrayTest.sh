@@ -11,9 +11,15 @@ declare -r TEST_ARRAY_FROM_STRING_SURROUND="(first second third fourth)"
 declare -r TEST_ARRAY_NUMERIC_INDEX="([0]=\"first\" [1]=\"second\" [2]=\"third\" [3]=\"fourth\")"
 declare -r TEST_ARRAY_ASSOCIATIVE_INDEX="([\"one\"]=\"first\" [\"two\"]=\"second\" [\"three\"]=\"third\" [\"four\"]=\"fourth\")"
 declare -r TEST_ARRAY_ASSOCIATIVE_INDEX_DIFF="([four]=\"fourth\" [three]=\"third\" )"
+declare -r TEST_ARRAY_ASSOCIATIVE_INDEX_OVER="([four]=\"fifth\")"
 declare -r TEST_ARRAY_DECLARE_ASSOCIATIVE_INDEX="declare -A rv='${TEST_ARRAY_ASSOCIATIVE_INDEX}'"
 declare -r TEST_ARRAY_DECLARE_NUMERIC_INDEX="declare -a RV='${TEST_ARRAY_NUMERIC_INDEX}'"
 declare -r TEST_ARRAY_NUMERIC_INDEX_DIFF="([2]=\"third\" [3]=\"fourth\")"
+declare -r TEST_ARRAY_MIXED_INDEX="([one]=\"1 one\" [two]=\"2 two\" [1]=\"1\")"
+declare -r TEST_ARRAY_MERGE_NUMERIC_INDEX="([0]=\"first\" [1]=\"second\" [2]=\"third\" [3]=\"fourth\" [4]=\"first\" [5]=\"second\" [6]=\"third\" [7]=\"fourth\")"
+declare -r TEST_ARRAY_MERGE_ASSOC_INDEX_WITH_MINUS="([four]=\"fourth\" [one]=\"first\" [two]=\"second\" [0]=\"first\" [1]=\"second\" [three]=\"third\" )"
+declare -r TEST_ARRAY_MERGE_ASSOCIATIVE_INDEX="([four]=\"fifth\" [three]=\"third\" )"
+
 
 readonly TEST_ARRAY_ARRAY_DIFF="-01-01-01-01-01"
 
@@ -45,6 +51,39 @@ function test_arrayDiff ()
     test=$(arrayDiff "${TEST_ARRAY_NUMERIC_INDEX}" "${TEST_ARRAY_FROM_STRING_MINUS}")
     echo -n "-$?"
     [[ "$test" == "${TEST_ARRAY_NUMERIC_INDEX_DIFF}" ]] && echo -n 1
+}
+
+
+readonly TEST_ARRAY_ARRAY_MERGE="-01-01-01-01-01"
+
+function test_arrayMerge ()
+{
+    local test
+
+    # Check nothing
+    test=$(arrayMerge)
+    echo -n "-$?"
+    [[ "$test" == "()" ]] && echo -n 1
+
+    # Check with only first parameter
+    test=$(arrayMerge "${TEST_ARRAY_FROM_STRING_SURROUND}")
+    echo -n "-$?"
+    [[ "$test" == "${TEST_ARRAY_NUMERIC_INDEX}" ]] && echo -n 1
+
+    # Check with indexed arrays with same values
+    test=$(arrayMerge "${TEST_ARRAY_NUMERIC_INDEX}" "${TEST_ARRAY_FROM_STRING_SURROUND}")
+    echo -n "-$?"
+    [[ "$test" == "${TEST_ARRAY_MERGE_NUMERIC_INDEX}" ]] && echo -n 1
+
+    # Check with associative array with differences
+    test=$(arrayMerge "${TEST_ARRAY_ASSOCIATIVE_INDEX}" "${TEST_ARRAY_FROM_STRING_MINUS}")
+    echo -n "-$?"
+    [[ "$test" == "${TEST_ARRAY_MERGE_ASSOC_INDEX_WITH_MINUS}" ]] && echo -n 1
+
+    # Check with numeric indexed arrays with differences
+    test=$(arrayMerge "${TEST_ARRAY_ASSOCIATIVE_INDEX_DIFF}" "${TEST_ARRAY_ASSOCIATIVE_INDEX_OVER}")
+    echo -n "-$?"
+    [[ "$test" == "${TEST_ARRAY_MERGE_ASSOCIATIVE_INDEX}" ]] && echo -n 1
 }
 
 
@@ -192,6 +231,7 @@ function test_inArray ()
 
 # Launch all functional tests
 bashUnit "arrayDiff" "${TEST_ARRAY_ARRAY_DIFF}" "$(test_arrayDiff)"
+bashUnit "arrayMerge" "${TEST_ARRAY_ARRAY_MERGE}" "$(test_arrayMerge)"
 bashUnit "arraySearch" "${TEST_ARRAY_ARRAY_SEARCH}" "$(test_arraySearch)"
 bashUnit "arrayToString" "${TEST_ARRAY_ARRAY_TO_STRING}" "$(test_arrayToString)"
 bashUnit "count" "${TEST_ARRAY_COUNT}" "$(test_count)"

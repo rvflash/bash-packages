@@ -26,24 +26,24 @@ function __arrayType ()
     local arr="$1"
     if [[ "$arr" == "declare -${BP_ARRAY_INDEXED_TYPE}"* ]]; then
         # declare -A NAME='([0]="v1" [1]="v2")'
-        echo -n ${BP_ARRAY_DECLARED_INDEXED_TYPE}
+        echo ${BP_ARRAY_DECLARED_INDEXED_TYPE}
     elif [[ "$arr" == "declare -${BP_ARRAY_ASSOCIATIVE_TYPE}"* ]]; then
         # declare -A NAME='(["k0"]="v1" ["k1"]="v2")'
-        echo -n ${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}
+        echo ${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}
     elif [[ "$arr" == "("*")" ]]; then
         if [[ "$arr" =~ ^\(([[:space:]]*)?\[[0-9]+\]=.*$ ]]; then
             # ([0]="v1" [1]="v2")
-            echo -n ${BP_ARRAY_INDEXED_TYPE}
+            echo ${BP_ARRAY_INDEXED_TYPE}
         elif [[ "$arr" =~ ^\(([[:space:]]*)?\[.*$ ]]; then
             # (["k0"]="v1" ["k1"]="v2")
-            echo -n ${BP_ARRAY_ASSOCIATIVE_TYPE}
+            echo ${BP_ARRAY_ASSOCIATIVE_TYPE}
         else
             # (v1 v2)
-            echo -n ${BP_ARRAY_INDEXED_TYPE}
+            echo ${BP_ARRAY_INDEXED_TYPE}
         fi
     else
         # v1 v2
-        echo -n ${BP_ARRAY_DEFAULT_INDEXED_TYPE}
+        echo ${BP_ARRAY_DEFAULT_INDEXED_TYPE}
     fi
 }
 
@@ -53,7 +53,7 @@ function __arrayType ()
 # @example inputs "v1 v2 v3" "v1"
 # @example return "v2 v3"
 #
-# @example inputs '(["k0"]="v1" ["k1"]="v2" ["k2"]="v3")" "v1"
+# @example inputs "(["k0"]="v1" ["k1"]="v2" ["k2"]="v3")" "v1"
 # @example return "(["k0"]="v1")"
 #
 # @param arrayToString $1 Arr1
@@ -75,7 +75,7 @@ function arrayDiff ()
         declare -a arr1="(${haystack1})"
     fi
     if [[ "${#arr1[@]}" -eq 0 ]]; then
-        echo -n "()"
+        echo "()"
         return 0
     fi
 
@@ -117,6 +117,99 @@ function arrayDiff ()
 }
 
 ##
+# Merge two arrays
+# If the input arrays have the same string keys, then the later value for that key will overwrite the previous one.
+# If, however, the arrays contain numeric keys, the later value will not overwrite the original value, but will be appended.
+# Values in the input array with numeric keys will be renumbered with incrementing keys starting from zero in the result array.
+#
+# @example inputs "v1 v2 v3" "v1"
+# @example return "v1 v2 v3 v1"
+#
+# @example inputs "(["k0"]="v1" ["k1"]="v2" ["k2"]="v3")" "v1"
+# @example return "(["k0"]="v1" ["k1"]="v2" ["k2"]="v3" [0]=""v1")"
+#
+# @example inputs "(["k0"]="v1" ["k1"]="v2" ["k2"]="v3")" "["k0"]="R1"
+# @example return "(["k0"]="R1" ["k1"]="v2" ["k2"]="v3")"
+#
+# @param arrayToString $1 Arr1
+# @param arrayToString $2 Arr2
+# @return arrayToString
+function arrayMerge ()
+{
+    local haystack1="$1"
+    local type1="$(__arrayType "$haystack1")"
+    if [[ "$type1" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr1="$(arrayToString "$haystack1")"
+    elif [[ "$type1" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr1="$(arrayToString "$haystack1")"
+    elif [[ "$type1" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr1="$haystack1"
+    elif [[ "$type1" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr1="$haystack1"
+    else
+        declare -a arr1="(${haystack1})"
+    fi
+
+    local haystack2="$2"
+    local type2="$(__arrayType "$haystack2")"
+    if [[ "$type2" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr2="$(arrayToString "$haystack2")"
+    elif [[ "$type2" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr2="$(arrayToString "$haystack2")"
+    elif [[ "$type2" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr2="$haystack2"
+    elif [[ "$type2" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr2="$haystack2"
+    else
+        declare -a arr2="(${haystack2})"
+    fi
+    if [[ "${#arr1[@]}" -eq 0 && "${#arr2[@]}" -eq 0 ]]; then
+        echo "()"
+        return 0
+    elif [[ "${#arr2[@]}" -eq 0 ]]; then
+        arrayToString "$(declare -p arr1)"
+        return 0
+    fi
+
+    declare -i assoc=0
+    if [[ "${type1: -1}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" || "${type2: -1}" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr=()
+        assoc=1
+    else
+        declare -a arr=()
+    fi
+
+    local key
+    declare -i max=0
+    for key in "${!arr1[@]}"; do
+        if [[ ${assoc} -eq 1 ]]; then
+            if [[ "$key" =~ ^[0-9]+$ ]]; then
+                arr["$max"]="${arr1["$key"]}"
+                max+=1
+            else
+                arr["$key"]="${arr1["$key"]}"
+            fi
+        else
+            arr+=("${arr1["$key"]}")
+        fi
+    done
+    for key in "${!arr2[@]}"; do
+        if [[ ${assoc} -eq 1 ]]; then
+            if [[ "$key" =~ ^[0-9]+$ ]]; then
+                arr["$max"]="${arr2["$key"]}"
+                max+=1
+            else
+                arr["$key"]="${arr2["$key"]}"
+            fi
+        else
+            arr+=("${arr2["$key"]}")
+        fi
+    done
+
+    arrayToString "$(declare -p arr)"
+}
+
+##
 # Searches the array for a given value and returns the corresponding key if successful
 #
 # @example inputs "v2" "v1 v2 v3"
@@ -154,7 +247,7 @@ function arraySearch ()
     local key
     for key in "${!arr[@]}"; do
         if [[ "${arr[$key]}" == $needle ]]; then
-            echo -n "$key"
+            echo "$key"
             return 0
         fi
     done
@@ -178,7 +271,7 @@ function arrayToString ()
 {
     local str="$1"
     if [[ -z "$str" ]]; then
-        echo -n "()"
+        echo "()"
         return 0
     fi
 
@@ -189,7 +282,7 @@ function arrayToString ()
     # Remove escaping of single quote (') by declare function
     str="${str//\\\'\'/}"
 
-    echo -n "(${str})"
+    echo "(${str})"
 }
 
 ##
@@ -201,7 +294,7 @@ function count ()
     declare -i count=0
     local haystack="$1"
     if [[ -z "$haystack" || "$haystack" =~ ^\(([[:space:]]*)?\)*$ ]]; then
-        echo -n ${count}
+        echo ${count}
         return 0
     fi
 
@@ -219,7 +312,7 @@ function count ()
     fi
     count=${#arr[@]}
 
-    echo -n ${count}
+    echo ${count}
 }
 
 ##
