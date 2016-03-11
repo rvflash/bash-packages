@@ -54,6 +54,39 @@ function test_arrayDiff ()
 }
 
 
+readonly TEST_ARRAY_KEY_EXISTS="-11-11-11-01-01"
+
+function test_arrayKeyExists ()
+{
+    local test
+
+    # Check nothing
+    test=$(arrayKeyExists)
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Search with no array as second parameter
+    test=$(arrayKeyExists "fifth")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Search in basic array a unexisting value
+    test=$(arrayKeyExists "fifth" "${TEST_ARRAY_FROM_STRING}")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Search in indexed array an existing value
+    test=$(arrayKeyExists "2" "${TEST_ARRAY_NUMERIC_INDEX}")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Search in associative array an existing value
+    test=$(arrayKeyExists "two" "${TEST_ARRAY_ASSOCIATIVE_INDEX}")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+}
+
+
 readonly TEST_ARRAY_ARRAY_MERGE="-01-01-01-01-01"
 
 function test_arrayMerge ()
@@ -196,7 +229,7 @@ function test_count ()
 }
 
 
-readonly TEST_ARRAY_IN_ARRAY="-11-11-01-01-01"
+readonly TEST_ARRAY_IN_ARRAY="-11-11-11-01-01-01"
 
 function test_inArray ()
 {
@@ -207,8 +240,13 @@ function test_inArray ()
     echo -n "-$?"
     [[ -z "$test" ]] && echo -n 1
 
+    # Search with no array as second parameter
+    test=$(inArray "fifth")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
     # Search in basic array a unexisting value
-    test=$(inArray "fifth" "${TEST_ARRAY_FROM_STRING}" )
+    test=$(inArray "fifth" "${TEST_ARRAY_FROM_STRING}")
     echo -n "-$?"
     [[ -z "$test" ]] && echo -n 1
 
@@ -231,6 +269,7 @@ function test_inArray ()
 
 # Launch all functional tests
 bashUnit "arrayDiff" "${TEST_ARRAY_ARRAY_DIFF}" "$(test_arrayDiff)"
+bashUnit "arrayKeyExists" "${TEST_ARRAY_KEY_EXISTS}" "$(test_arrayKeyExists)"
 bashUnit "arrayMerge" "${TEST_ARRAY_ARRAY_MERGE}" "$(test_arrayMerge)"
 bashUnit "arraySearch" "${TEST_ARRAY_ARRAY_SEARCH}" "$(test_arraySearch)"
 bashUnit "arrayToString" "${TEST_ARRAY_ARRAY_TO_STRING}" "$(test_arrayToString)"

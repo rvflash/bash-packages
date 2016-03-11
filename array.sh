@@ -117,6 +117,43 @@ function arrayDiff ()
 }
 
 ##
+# Checks if the given key or index exists in the array
+# @param string $1 Needle
+# @param arrayToString $2 Haystack
+# @returnStatus 1 If first parameter named needle is empty
+# @returnStatus 1 If needle is not a key of the haystack
+function arrayKeyExists ()
+{
+    local needle="$1"
+    if [[ -z "$needle" ]]; then
+        return 1
+    fi
+
+    local haystack="$2"
+    local type="$(__arrayType "$haystack")"
+    if [[ "$type" == "${BP_ARRAY_DECLARED_INDEXED_TYPE}" ]]; then
+        declare -a arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_DECLARED_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$(arrayToString "$haystack")"
+    elif [[ "$type" == "${BP_ARRAY_INDEXED_TYPE}" ]]; then
+        declare -a arr="$haystack"
+    elif [[ "$type" == "${BP_ARRAY_ASSOCIATIVE_TYPE}" ]]; then
+        declare -A arr="$haystack"
+    else
+        declare -a arr="(${haystack})"
+    fi
+
+    local key
+    for key in "${!arr[@]}"; do
+        if [[ "$key" == "$needle" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+##
 # Merge two arrays
 # If the input arrays have the same string keys, then the later value for that key will overwrite the previous one.
 # If, however, the arrays contain numeric keys, the later value will not overwrite the original value, but will be appended.
@@ -310,7 +347,7 @@ function count ()
     else
         declare -a arr="(${haystack})"
     fi
-    count=${#arr[@]}
+    count="${#arr[@]}"
 
     echo ${count}
 }
@@ -342,8 +379,9 @@ function inArray ()
         declare -a arr="(${haystack})"
     fi
 
-    for VALUE in ${arr[@]}; do
-        if [[ "${VALUE}" == $needle ]]; then
+    local value
+    for value in "${arr[@]}"; do
+        if [[ "$value" == ${needle} ]]; then
             return 0
         fi
     done
