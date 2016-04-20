@@ -600,11 +600,11 @@ function mysqlOption ()
     case "${option}" in
         ${BP_MYSQL_TO})
             declare -i timeOut="$3"
-            sed -i -e $((${BP_MYSQL_TO}+1))'s/.*/'${timeOut}'/' "$connectFile"
+            sed -e $((${BP_MYSQL_TO}+1))'s/.*/'${timeOut}'/' "$connectFile" > "${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
             ;;
         ${BP_MYSQL_CACHED})
             declare -i cached="$3"
-            sed -i -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${cached}'/' "$connectFile"
+            sed -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${cached}'/' "$connectFile" > "${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
             ;;
         *) return 1 ;;
     esac
