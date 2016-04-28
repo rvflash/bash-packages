@@ -223,7 +223,7 @@ function ceil ()
     if isFloat "$val1"; then
         # Keep only the value left point
         value=$(( 10#${val1%%.*} ))
-        if [[ ${value} -gt 0 && $(decimal "$val1") -gt 0 ]]; then
+        if [[ $(decimal "$val1") -gt 0 && "$val1" != "-"* ]] ; then
             value+=1
         fi
     elif isInt "$val1"; then
@@ -249,7 +249,7 @@ function floor ()
     if isFloat "$val1"; then
         # Keep only the value left point
         value=$(( 10#${val1%%.*} ))
-        if [[ ${value} -lt 0 && $(decimal "$val1") -gt 0 ]]; then
+        if [[ ${value} -lt 0 || "$val1" == "-"* ]] && [[ $(decimal "$val1") -gt 0 ]]; then
             value+=-1
         fi
     elif isInt "$val1"; then
