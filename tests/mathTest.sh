@@ -11,12 +11,14 @@ readonly TEST_NUMBER_STR_INT_NEGATIVE="-5"
 readonly TEST_NUMBER_STR_BIG_INT_NEGATIVE="-6"
 readonly TEST_NUMBER_STR_FLOAT_NEGATIVE="-5.016"
 readonly TEST_NUMBER_STR_FLOAT_NEGATIVE_ROUND="-5.02"
+readonly TEST_NUMBER_STR_FLOAT_NEGATIVE_TRAILING_ZERO="-5.00"
 readonly TEST_NUMBER_STR_FLOAT_LEADING_ZERO="5.012"
 readonly TEST_NUMBER_STR_FLOAT_LEADING_ZERO_2D="5.01"
 readonly TEST_NUMBER_STR_FLOAT_POSITIVE="5.166"
 readonly TEST_NUMBER_STR_FLOAT_POSITIVE_ROUND="5.2"
 readonly TEST_NUMBER_STR_FLOAT_POSITIVE_ROUND_2="5.17"
 readonly TEST_NUMBER_STR_INT_LEADING_ZERO="012"
+readonly TEST_NUMBER_STR_FLOAT_TRAILING_ZERO="12.00"
 readonly TEST_NUMBER_STR_FLOAT="12.45"
 readonly TEST_NUMBER_STR_BIG_FLOAT="12.55"
 readonly TEST_NUMBER_STR_MIN_FLOAT="1.255"
@@ -204,7 +206,133 @@ function test_isNumeric ()
 }
 
 
-readonly TEST_FLOAT_GREATER_THAN="-11-11-11-01-01-11-11-11-01"
+readonly TEST_FLOAT_EQUAL_OR_GREATER_THAN="-11-01-01-01-01-11-11-11-01-01-01"
+
+function test_isFloatEqualOrGreaterThan ()
+{
+    local test
+
+    # Check nothing
+    test=$(isFloatEqualOrGreaterThan)
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare equal int values
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_TYPE_INT} ${TEST_NUMBER_TYPE_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare equal float values
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare int value with float value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_BIG_INT} ${TEST_NUMBER_STR_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with int value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare string value with int value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_UNKNOWN} ${TEST_NUMBER_TYPE_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with string value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_UNKNOWN})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with an another float value with same decimal
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_BIG_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with a smaller float
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_BIGGER_FLOAT} ${TEST_NUMBER_STR_BIG_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare negative float value same with int value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT_NEGATIVE_TRAILING_ZERO} ${TEST_NUMBER_STR_INT_NEGATIVE})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with same int value
+    test=$(isFloatEqualOrGreaterThan ${TEST_NUMBER_STR_FLOAT_TRAILING_ZERO} ${TEST_NUMBER_STR_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+}
+
+
+readonly TEST_FLOAT_EQUAL_OR_LOWER_THAN="-11-11-11-01-01-11-11-11-01"
+
+function test_isFloatEqualOrLowerThan ()
+{
+    local test
+
+    # Check nothing
+    test=$(isFloatEqualOrLowerThan)
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare equal int values
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_TYPE_INT} ${TEST_NUMBER_TYPE_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare equal float values
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with int value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_FLOAT} ${TEST_NUMBER_STR_BIG_INT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare int value with float value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_INT} ${TEST_NUMBER_STR_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare string value with int value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_TYPE_INT} ${TEST_NUMBER_STR_UNKNOWN})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with string value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_UNKNOWN} ${TEST_NUMBER_STR_FLOAT} )
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with an another float value with same decimal
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_BIG_FLOAT} ${TEST_NUMBER_STR_FLOAT} )
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with a smaller float
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_BIG_FLOAT} ${TEST_NUMBER_STR_BIGGER_FLOAT} )
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare negative float value same with int value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_INT_NEGATIVE} ${TEST_NUMBER_STR_FLOAT_NEGATIVE_TRAILING_ZERO} )
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with same int value
+    test=$(isFloatEqualOrLowerThan ${TEST_NUMBER_STR_INT} ${TEST_NUMBER_STR_FLOAT_TRAILING_ZERO} )
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+}
+
+
+readonly TEST_FLOAT_GREATER_THAN="-11-11-11-01-01-11-11-11-01-11-11"
 
 function test_isFloatGreaterThan ()
 {
@@ -252,6 +380,16 @@ function test_isFloatGreaterThan ()
 
     # Compare float value with a smaller float
     test=$(isFloatGreaterThan ${TEST_NUMBER_STR_BIGGER_FLOAT} ${TEST_NUMBER_STR_BIG_FLOAT})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare negative float value with same int value
+    test=$(isFloatGreaterThan ${TEST_NUMBER_STR_FLOAT_NEGATIVE_TRAILING_ZERO} ${TEST_NUMBER_STR_INT_NEGATIVE})
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Compare float value with same int value
+    test=$(isFloatGreaterThan ${TEST_NUMBER_STR_FLOAT_TRAILING_ZERO} ${TEST_NUMBER_STR_INT})
     echo -n "-$?"
     [[ -z "$test" ]] && echo -n 1
 }
@@ -720,6 +858,8 @@ bashUnit "int" "${TEST_INT}" "$(test_int)"
 bashUnit "isFloat" "${TEST_IS_FLOAT}" "$(test_isFloat)"
 bashUnit "isInt" "${TEST_IS_INT}" "$(test_isInt)"
 bashUnit "isNumeric" "${TEST_IS_NUMERIC}" "$(test_isNumeric)"
+bashUnit "isFloatEqualOrGreaterThan" "${TEST_FLOAT_EQUAL_OR_GREATER_THAN}" "$(test_isFloatEqualOrGreaterThan)"
+bashUnit "isFloatEqualOrLowerThan" "${TEST_FLOAT_EQUAL_OR_GREATER_THAN}" "$(test_isFloatEqualOrLowerThan)"
 bashUnit "isFloatGreaterThan" "${TEST_FLOAT_GREATER_THAN}" "$(test_isFloatGreaterThan)"
 bashUnit "isFloatLowerThan" "${TEST_FLOAT_LOWER_THAN}" "$(test_isFloatLowerThan)"
 bashUnit "math" "${TEST_MATH}" "$(test_math)"

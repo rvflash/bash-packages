@@ -159,6 +159,82 @@ function int ()
 }
 
 ##
+# First float value is equal or greater than the second ?
+# @param float $1
+# @param float|int $2
+# @returnStatus 1 If $1 is greater than $2, 0 otherwise
+function isFloatEqualOrGreaterThan ()
+{
+    local val1="$1"
+    local res1=$(numericType "$val1")
+    if [[ "$res1" == "${BP_UNKNOWN_TYPE}" ]]; then
+        return 1
+    fi
+
+    local val2="$2"
+    local res2=$(numericType "$val2")
+    if [[ "$res2" == "${BP_UNKNOWN_TYPE}" ]]; then
+        return 1
+    fi
+
+    if [[ ${BP_BC} -eq 1 ]]; then
+        if [[ 1 -eq $(echo "$val1 >= $val2" | bc) ]]; then
+            return 0
+        fi
+    else
+        if [[ "$res1" == "${BP_INT_TYPE}" ]]; then
+            val1="${val1}.0"
+        fi
+        if [[ "$res2" == "${BP_INT_TYPE}" ]]; then
+            val2="${val2}.0"
+        fi
+        if (( $(floor "$val1") >= $(floor "$val2") || ( $(floor "$val1") == $(floor "$val2") && $(decimal "$val1") >= $(decimal "$val2") ) )) ; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+##
+# First float value is equal or lower than the second ?
+# @param float Var1
+# @param float|int Var2
+# @returnStatus 1 If $1 is lower than $2, 0 otherwise
+function isFloatEqualOrLowerThan ()
+{
+    local val1="$1"
+    local res1=$(numericType "$val1")
+    if [[ "$res1" == "${BP_UNKNOWN_TYPE}" ]]; then
+        return 1
+    fi
+
+    local val2="$2"
+    local res2=$(numericType "$val2")
+    if [[ "$res2" == "${BP_UNKNOWN_TYPE}" ]]; then
+        return 1
+    fi
+
+    if [[ ${BP_BC} -eq 1 ]]; then
+        if [[ 1 -eq $(echo "$val1 <= $val2" | bc) ]]; then
+            return 0
+        fi
+    else
+        if [[ "$res1" == "${BP_INT_TYPE}" ]]; then
+            val1="${val1}.0"
+        fi
+        if [[ "$res2" == "${BP_INT_TYPE}" ]]; then
+            val2="${val2}.0"
+        fi
+        if (( $(floor "$val1") <= $(floor "$val2") || ( $(floor "$val1") == $(floor "$val2") && $(decimal "$val1") <= $(decimal "$val2") ) )) ; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+##
 # First float value is greater than the second ?
 # @param float $1
 # @param float|int $2

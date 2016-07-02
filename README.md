@@ -116,6 +116,8 @@ You can also add your own prefix by using the method named `logUsePrefix`.
 * Function isFloat ( mixed value ) void `?=0 if it is a float value, 1 otherwise`
 * Function isInt ( mixed value ) void `?=0 if it is a integer value, 1 otherwise`
 * Function isNumeric ( mixed value ) void `?=0 if it is a numeric value, 1 otherwise`
+* Function isFloatEqualOrGreaterThan ( float var1, mixed var2 ) void `?=0 if var 1 is lower, 1 otherwise`
+* Function isFloatEqualOrLowerThan ( float var1, mixed var2 ) void `?=0 if var 1 is lower, 1 otherwise`
 * Function isFloatGreaterThan ( float var1, mixed var2 ) void `?=0 if var 1 is lower, 1 otherwise`
 * Function isFloatLowerThan ( float var1, mixed var2 ) void `?=0 if var 1 is greater, 1 otherwise`
 * Function math ( string operator, mixed var1, mixed var2, int scale ) float|int `?>0 In case of error`
