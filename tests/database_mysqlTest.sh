@@ -12,12 +12,14 @@ declare -r -i TEST_DATABASE_MYSQL_SELECT_SIZE=3
 declare -r -i TEST_DATABASE_MYSQL_TO=1
 declare -r TEST_DATABASE_MYSQL_TABLE_TEST="rv"
 declare -r TEST_DATABASE_MYSQL_TABLE_FAKE="vv"
+declare -r TEST_DATABASE_MYSQL_STR_EXCEEDED_255CHARS="$(printf '%*s' 256 | tr ' ' a)"
 declare -r TEST_DATABASE_MYSQL_SELECT_ROWS="SELECT * FROM ${TEST_DATABASE_MYSQL_TABLE_TEST};"
 declare -r TEST_DATABASE_MYSQL_SELECT_ONE_ROW="SELECT * FROM ${TEST_DATABASE_MYSQL_TABLE_TEST} LIMIT 1;"
 declare -r TEST_DATABASE_MYSQL_SELECT_ONE_ROW_VALUE="1	First"
 declare -r TEST_DATABASE_MYSQL_BAD_SELECT="SELECT * FROM ${TEST_DATABASE_MYSQL_TABLE_FAKE};"
 declare -r TEST_DATABASE_MYSQL_EXOTIC_SELECT="SELECT * FROM rv2;"
 declare -r TEST_DATABASE_MYSQL_INSERT="INSERT INTO ${TEST_DATABASE_MYSQL_TABLE_TEST} (id, name) VALUES (3, FLOOR(RAND()*1000)) ON DUPLICATE KEY UPDATE name=VALUES(name);"
+declare -r TEST_DATABASE_MYSQL_BAD_INSERT="INSERT IGNORE INTO rv3 (id, name) VALUES (2, '${TEST_DATABASE_MYSQL_STR_EXCEEDED_255CHARS}');"
 declare -r TEST_DATABASE_MYSQL_STR_SQUOTED="value'DELETE FROM"
 declare -r TEST_DATABASE_MYSQL_STR_PSQUOTED="value\'DELETE FROM"
 declare -r TEST_DATABASE_MYSQL_STR_DQUOTED='value="DELETE FROM'
@@ -72,12 +74,12 @@ function test_mysqlClose ()
     echo -n "-$?"
     [[ -z "$test" ]] && echo -n 1
 
-    # Check With invalid link
+    # Check with invalid link
     test=$(mysqlClose "123")
     echo -n "-$?"
     [[ -z "$test" ]] && echo -n 1
 
-    # Check With valid link
+    # Check with valid link
     [[ -f "${dbTestFile}" ]] && echo -n "-1"
     test=$(mysqlClose "${dbTest}")
     echo -n "$?"
@@ -188,7 +190,7 @@ function test_mysqlEscapeString ()
 }
 
 
-readonly TEST_DATABASE_MYSQL_MYSQL_LAST_ERROR="-01-01-01-01"
+readonly TEST_DATABASE_MYSQL_MYSQL_ERROR="-01-01-01-01"
 
 function test_mysqlLastError ()
 {
@@ -220,6 +222,40 @@ function test_mysqlLastError ()
     # Check with valid link to database without error
     queryTest=$(mysqlQuery "${dbTest}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
     test=$(mysqlLastError "${dbTest}")
+    echo -n "-$?"
+    [[ -n "$test" ]] && echo -n 1
+}
+
+function test_mysqlError ()
+{
+    local test dbTest dbTestFile queryTest
+
+    dbTest=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+    dbTestFile="${BP_MYSQL_WRK_DIR}/${dbTest}${BP_MYSQL_ERROR_EXT}"
+
+    # Cleaning
+    if [[ -f "$dbTestFile" ]]; then
+        rm -f "$dbTestFile"
+    fi
+
+    # Check with no link to database
+    test=$(mysqlError)
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Check with fake link to database
+    test=$(mysqlError "123")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Check with valid link to database without error
+    test=$(mysqlError "${dbTest}")
+    echo -n "-$?"
+    [[ -z "$test" ]] && echo -n 1
+
+    # Check with valid link to database without error
+    queryTest=$(mysqlQuery "${dbTest}" "${TEST_DATABASE_MYSQL_BAD_SELECT}")
+    test=$(mysqlError "${dbTest}")
     echo -n "-$?"
     [[ -n "$test" ]] && echo -n 1
 }
@@ -463,7 +499,7 @@ function test_mysqlQuery ()
     echo -n "-$?"
     [[ -z "${test}" ]] && echo -n 1
 
-    # Check With invalid database link
+    # Check with invalid database link
     test=$(mysqlQuery "123" "${TEST_DATABASE_MYSQL_SELECT_ONE_ROW}")
     echo -n "-$?"
     [[ -z "${test}" ]] && echo -n 1
@@ -480,13 +516,48 @@ function test_mysqlQuery ()
 }
 
 
+readonly TEST_DATABASE_MYSQL_MYSQL_WARNING_COUNT="-11-11-001-001"
+
+function test_mysqlWarningCount ()
+{
+    local test dbTest
+
+    dbTest=$(mysqlConnect "${TEST_DATABASE_MYSQL_HOST}" "${TEST_DATABASE_MYSQL_USER}" "${TEST_DATABASE_MYSQL_PASS}" "${TEST_DATABASE_MYSQL_DB}")
+
+    # Check nothing
+    test=$(mysqlWarningCount)
+    echo -n "-$?"
+    [[ -z "${test}" ]] && echo -n 1
+
+    # Check with invalid database link
+    test=$(mysqlWarningCount "123")
+    echo -n "-$?"
+    [[ -z "${test}" ]] && echo -n 1
+
+    # Check with valid database link but query with warning
+    test=$(mysqlQuery "${dbTest}" "${TEST_DATABASE_MYSQL_BAD_INSERT}")
+    echo -n "-$?"
+    test=$(mysqlWarningCount "${dbTest}")
+    echo -n "$?"
+    [[ "${test}" -gt 0 ]] && echo -n 1
+
+    # Check with valid database and query
+    test=$(mysqlQuery "${dbTest}" "${TEST_DATABASE_MYSQL_INSERT}")
+    echo -n "-$?"
+    test=$(mysqlWarningCount "${dbTest}")
+    echo -n "$?"
+    [[ "${test}" -eq 0 ]] && echo -n 1
+}
+
+
 # Launch all functional tests
 bashUnit "mysqlAffectedRows" "${TEST_DATABASE_MYSQL_AFFECTED_ROWS}" "$(test_mysqlAffectedRows)"
 bashUnit "mysqlClose" "${TEST_DATABASE_MYSQL_MYSQL_CLOSE}" "$(test_mysqlClose)"
 bashUnit "mysqlConnect" "${TEST_DATABASE_MYSQL_MYSQL_CONNECT}" "$(test_mysqlConnect)"
 bashUnit "mysqlDump" "${TEST_DATABASE_MYSQL_MYSQL_DUMP}" "$(test_mysqlDump)"
 bashUnit "mysqlEscapeString" "${TEST_DATABASE_MYSQL_MYSQL_ESCAPE_STRING}" "$(test_mysqlEscapeString)"
-bashUnit "mysqlLastError" "${TEST_DATABASE_MYSQL_MYSQL_LAST_ERROR}" "$(test_mysqlLastError)"
+bashUnit "mysqlLastError" "${TEST_DATABASE_MYSQL_MYSQL_ERROR}" "$(test_mysqlLastError)" # @deprecated
+bashUnit "mysqlError" "${TEST_DATABASE_MYSQL_MYSQL_ERROR}" "$(test_mysqlError)"
 bashUnit "mysqlLoad" "${TEST_DATABASE_MYSQL_MYSQL_LOAD}" "$(test_mysqlLoad)"
 bashUnit "mysqlFetchAll" "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ALL}" "$(test_mysqlFetchAll)"
 bashUnit "mysqlFetchAssoc" "${TEST_DATABASE_MYSQL_MYSQL_FETCH_ASSOC}" "$(test_mysqlFetchAssoc)"
@@ -495,3 +566,4 @@ bashUnit "mysqlFetchRaw" "${TEST_DATABASE_MYSQL_MYSQL_FETCH_RAW}" "$(test_mysqlF
 bashUnit "mysqlNumRows" "${TEST_DATABASE_MYSQL_MYSQL_NUM_ROWS}" "$(test_mysqlNumRows)"
 bashUnit "mysqlOption" "${TEST_DATABASE_MYSQL_MYSQL_OPTION}" "$(test_mysqlOption)"
 bashUnit "mysqlQuery" "${TEST_DATABASE_MYSQL_MYSQL_QUERY}" "$(test_mysqlQuery)"
+bashUnit "mysqlWarningCount" "${TEST_DATABASE_MYSQL_MYSQL_WARNING_COUNT}" "$(test_mysqlWarningCount)"
