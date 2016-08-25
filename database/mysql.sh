@@ -9,7 +9,7 @@
 # @copyright 2016 Hervé Gouchet
 # @license http://www.apache.org/licenses/LICENSE-2.0
 # @source https://github.com/rvflash/bash-packages
-
+# @see http://dev.mysql.com/doc/refman/5.7/en/c-api-functions.html for naming convention
 # Require mysql command line tool
 declare -r -i BP_MYSQL="$(if [[ -z "$(type -p mysql)" ]]; then echo 0; else echo 1; fi)"
 declare -r -i BP_MYSQL_DUMP="$(if [[ -z "$(type -p mysqldump)" ]]; then echo 0; else echo 1; fi)"
@@ -34,6 +34,7 @@ declare -r BP_MYSQL_REPLACE="[Rr][Ee][Pp][Ll][Aa][Cc][Ee]"
 declare -r BP_MYSQL_DELETE="[Dd][Ee][Ll][Ee][Tt][Ee]"
 declare -r BP_MYSQL_CALL="[Cc][Aa][Ll][Ll]"
 declare -r BP_MYSQL_AFFECTED_ROW_COUNT=";SELECT ROW_COUNT();"
+declare -r BP_MYSQL_WARNING_PREFIX="Warning (Code"
 
 # Constants
 declare -r -i BP_MYSQL_HOST=0
@@ -178,6 +179,7 @@ function __mysql_query ()
         return 0
     fi
 
+    # Defines query method
     declare -i method
     if __mysql_is_affecting_method "$query"; then
         method=${BP_MYSQL_AFFECTING_METHOD}
@@ -189,25 +191,29 @@ function __mysql_query ()
         method=${BP_MYSQL_UNKNOWN_METHOD}
     fi
 
+    # Fetches the results
     local result
     result=$(mysql ${options} ${link["${BP_MYSQL_DB}"]} -e "$query" 2>"$errorFile")
     if [[ $? -ne 0 ]]; then
-        # An error occured
         return 1
     elif [[ ${method} -eq ${BP_MYSQL_AFFECTING_METHOD} ]]; then
         # Extract result of the last query to get affected row count
-        echo "$result" | tail -n 1 > "$affectedRowFile"
+        echo "$result" | tail -n 1 >"$affectedRowFile"
     elif [[ ${method} -eq ${BP_MYSQL_SELECTING_METHOD} ]]; then
         if [[ "$options" == *"${BP_MYSQL_COLUMN_NAMES_OPTS}"* ]]; then
-            echo "$result" > "$queryResultFile"
+            echo "$result" | grep -v "^${BP_MYSQL_WARNING_PREFIX}" >"$queryResultFile"
         else
             # Extract header with columns names in dedicated file
-            echo "$result" | head -n 1 > "${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_COLUMN_NAMES_EXT}"
-            # Keep only datas
-            echo "$result" | sed 1d > "$queryResultFile"
+            echo "$result" | head -n 1 >"${BP_MYSQL_WRK_DIR}/${queryChecksum}${BP_MYSQL_COLUMN_NAMES_EXT}"
+            # Keep only data without warning message and header
+            echo "$result" | grep -v "^${BP_MYSQL_WARNING_PREFIX}" | sed 1d >"$queryResultFile"
         fi
         echo -n "$queryChecksum"
     fi
+    # Keeps warning messages in error log file
+    echo "$result" | grep "^${BP_MYSQL_WARNING_PREFIX}" >>"$errorFile"
+
+    return 0
 }
 
 ##
@@ -232,7 +238,7 @@ function __mysql_fetch_array ()
                 printf("[%d]=\"%s\" ", (i-1), $i)
             }
             printf(")\n")
-        }' "$srcFile" > "$dstFile"
+        }' "$srcFile" >"$dstFile"
     fi
 
     cat "$dstFile"
@@ -266,7 +272,7 @@ function __mysql_fetch_assoc ()
                 printf("[%s]=\"%s\" ", h[i], $i)
             }
             printf(")\n")
-        }' "$srcFile" > "$dstFile"
+        }' "$srcFile" >"$dstFile"
     fi
 
     cat "$dstFile"
@@ -362,15 +368,16 @@ function mysqlConnect ()
     local checksumFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_CONNECT_EXT}"
     if [[ ! -f "${checksumFile}" ]]; then
         # Try to connect to mysql server and use database
+        local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
         local options dryRun
         options=$(__mysql_options "$host" "$user" "$pass" "$timeOut")
-        dryRun=$(mysql $options -e "USE ${db};" 2>&1 >/dev/null)
+        dryRun=$(mysql $options -e "USE ${db};" 1>/dev/null 2>"$errorFile")
         if [[ $? -ne 0 ]]; then
             return 1
         fi
 
         # Create link for this connection and save properties
-        echo -e "${host}\n${user}\n${pass}\n${db}\n${timeOut}\n${cached}" > "${checksumFile}"
+        echo -e "${host}\n${user}\n${pass}\n${db}\n${timeOut}\n${cached}" >"${checksumFile}"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
@@ -421,7 +428,7 @@ function mysqlDump ()
 # If link is on error or there is no affected rows for this connexion
 # @param int Database link
 # @return string
-function mysqlLastError ()
+function mysqlError ()
 {
     declare -i checksum="$1"
     local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
@@ -430,6 +437,16 @@ function mysqlLastError ()
     fi
 
     cat "$errorFile"
+}
+
+##
+# Alias for mysqlLastError
+# @deprecated
+# @param int Database link
+# @return string
+function mysqlLastError ()
+{
+    mysqlError "$@"
 }
 
 ##
@@ -600,11 +617,11 @@ function mysqlOption ()
     case "${option}" in
         ${BP_MYSQL_TO})
             declare -i timeOut="$3"
-            sed -e $((${BP_MYSQL_TO}+1))'s/.*/'${timeOut}'/' "$connectFile" > "${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
+            sed -e $((${BP_MYSQL_TO}+1))'s/.*/'${timeOut}'/' "$connectFile" >"${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
             ;;
         ${BP_MYSQL_CACHED})
             declare -i cached="$3"
-            sed -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${cached}'/' "$connectFile" > "${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
+            sed -e $((${BP_MYSQL_CACHED}+1))'s/.*/'${cached}'/' "$connectFile"  "${connectFile}-e" && mv "${connectFile}-e" "$connectFile"
             ;;
         *) return 1 ;;
     esac
@@ -626,4 +643,21 @@ function mysqlQuery ()
     local query="$2"
 
     __mysql_query "$checksum" "$query" "${BP_MYSQL_BASIC_OPTS}"
+}
+
+##
+# Returns the number of errors, warnings, and notes generated during execution of the previous SQL statement.
+# Uses @@warning_count but this can also do the job: SHOW COUNT(*) WARNINGS;
+# @param int $1 Database link
+# @return int The warning count.
+# @returnStatus 1 If database's host is unknown
+# @returnStatus 1 If query failed
+function mysqlWarningCount()
+{
+    declare -i checksum="$1"
+    local errorFile="${BP_MYSQL_WRK_DIR}/${checksum}${BP_MYSQL_ERROR_EXT}"
+    if [[ "$checksum" -eq 0 || ! -f "$errorFile" ]]; then
+        return 1
+    fi
+    echo -n $(grep "^${BP_MYSQL_WARNING_PREFIX}" "$errorFile" | wc -l)
 }
