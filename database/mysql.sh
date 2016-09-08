@@ -177,6 +177,9 @@ function __mysql_query ()
         # Query already in cache
         echo -n "$queryChecksum"
         return 0
+    else
+        # Clears internal caches
+        rm -f "${BP_MYSQL_WRK_DIR}/${queryChecksum}"*
     fi
 
     # Defines query method
